@@ -15,7 +15,13 @@ public interface Constants {
    String USER_HAS_COUPON_USE_RATE  ="hasCouponUseRate";
    // 在所有优惠消费中 直接使用折扣消费率
    String USER_DIRECT_DISCOUNT_RATE ="directDiscountRate";
+   // 获得优惠券后使用时间间隔
+   String USER_COUPON_USE_TIPME_INTERVAL = "couponUseTimeInterval";
+   //用户消费优惠券的商家数量
+   String USER_COUPON_MERCHANT_COUNT = "userCousumeMerchantCount";
 
+    // 用户使用不同优惠券数量
+   String USER_COUPON_COUNT = "userCouponCount";
 
 
 }

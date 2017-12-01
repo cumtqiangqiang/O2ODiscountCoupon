@@ -13,6 +13,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src/python" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/TestResource" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/Resource" type="java-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Test" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
