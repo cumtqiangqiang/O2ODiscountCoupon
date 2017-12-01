@@ -178,15 +178,19 @@ public class ExtractFeatures {
         }).persist(StorageLevel.MEMORY_AND_DISK());
 
         // 用户使用优惠券消费的商家数量
-        JavaPairRDD<String, String> userMerchantCntRDD = userCouponRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, Long>() {
+        JavaPairRDD<String, String> userMerchantCntRDD = userCouponRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, String>() {
 
             @Override
-            public Tuple2<String, Long> call(Tuple2<String, Row> tuple) throws Exception {
+            public Tuple2<String, String> call(Tuple2<String, Row> tuple) throws Exception {
                 String userId = tuple._1();
                 String merchantId = tuple._2().getString(1);
-                String userMechant = userId + "-" + merchantId;
 
-                return new Tuple2<String, Long>(userMechant, 1L);
+                return new Tuple2<String, String>(userId,merchantId);
+            }
+        }).distinct().mapToPair(new PairFunction<Tuple2<String, String>, String, Long>() {
+            @Override
+            public Tuple2<String, Long> call(Tuple2<String, String> t) throws Exception {
+                return new Tuple2<String, Long>(t._1(),1L);
             }
         }).reduceByKey(new Function2<Long, Long, Long>() {
             @Override
@@ -195,41 +199,44 @@ public class ExtractFeatures {
             }
         }).mapToPair(new PairFunction<Tuple2<String, Long>, String, String>() {
             @Override
-            public Tuple2<String, String> call(Tuple2<String, Long> tuple) throws Exception {
-                return new Tuple2<String, String>(tuple._1().split("-")[0],
-                         Constants.USER_COUPON_MERCHANT_COUNT+"="+tuple._2());
+            public Tuple2<String, String> call(Tuple2<String, Long> t) throws Exception {
+                return new Tuple2<String, String>(t._1(),Constants.USER_COUPON_MERCHANT_COUNT+"="+t._2()) ;
             }
         });
 
 
 
-        // 用户使用消费券的数量
-       JavaPairRDD<String,Long> userCouponCntRDD = userCouponRDD.mapToPair(new PairFunction<Tuple2<String,Row>, String, Long>() {
+        // 用户使用消费券的数量  JavaPairRDD<String,Long> userCouponCntRDD
+        JavaPairRDD<String, String> userCouponCntRDD = userCouponRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, String>() {
+
 
             @Override
-            public Tuple2<String, Long> call(Tuple2<String, Row> t) throws Exception {
+            public Tuple2<String, String> call(Tuple2<String, Row> t) throws Exception {
+                return new Tuple2<String, String>(t._1(), t._2().getString(2));
+            }
+        }).distinct().mapToPair(new PairFunction<Tuple2<String, String>, String, Long>() {
 
-                return new Tuple2<String, Long>(t._1()+"-"+t._2().getString(2),1L);
+
+            @Override
+            public Tuple2<String, Long> call(Tuple2<String, String> tuple2) throws Exception {
+                return new Tuple2<String, Long>(tuple2._1(), 1L);
             }
         }).reduceByKey(new Function2<Long, Long, Long>() {
-           @Override
-           public Long call(Long v1, Long v2) throws Exception {
-               return v1+v2;
-           }
-       });
+            @Override
+            public Long call(Long v1, Long v2) throws Exception {
+                return v1 + v2;
+            }
+        }).mapToPair(new PairFunction<Tuple2<String, Long>, String, String>() {
+            @Override
+            public Tuple2<String, String> call(Tuple2<String, Long> t) throws Exception {
+                return new Tuple2<String, String>(t._1(),Constants.USER_COUPON_COUNT+"="+t._2());
+            }
+        });
 
-//               .mapToPair(new PairFunction<Tuple2<String, Long>, String, String>() {
-//           @Override
-//           public Tuple2<String, String> call(Tuple2<String, Long> tuple) throws Exception {
-//               return new Tuple2<String, String>(tuple._1().split("-")[0],
-//                       Constants.USER_COUPON_COUNT+"="+String.valueOf(tuple._2()));
-//           }
-//       });
 
-//        PrintMap.printMap(Constants.USER_COUPON_MERCHANT_COUNT,userMerchantCntRDD.collectAsMap());
+        PrintMap.printMap(Constants.USER_COUPON_MERCHANT_COUNT,userMerchantCntRDD.collectAsMap());
 
         PrintMap.printMap(Constants.USER_COUPON_COUNT,userCouponCntRDD.collectAsMap());
-
 
 
     }
