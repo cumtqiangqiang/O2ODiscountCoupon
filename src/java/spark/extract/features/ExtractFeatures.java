@@ -38,9 +38,7 @@ public class ExtractFeatures {
         options.put("header","true");
         options.put("path", Constants.LESS_OFFLINE_DATA_PATH);
         DataFrame df = sqlContext.load("com.databricks.spark.csv",options);
-
         df.registerTempTable("offline_counsume");
-
         getConsumerNoCouponConsumeRate(df,false);
         jsc.stop();
 
@@ -69,9 +67,9 @@ public class ExtractFeatures {
             @Override
             public Tuple2<String, String> call(Tuple2<String, Iterable<Row>> tuple) throws Exception {
                 Iterator<Row> userConsumeIt = tuple._2().iterator();
+                String userId = tuple._1();
                 // 总的消费次数
                 long count = 0;
-
                 // 正常消费
                 float normalConsumeCnt = 0.f;
                 // 正常消费率
@@ -83,7 +81,9 @@ public class ExtractFeatures {
                 // 有消费券并且已经使用
                 float hasCouponUse = 0.f;
                 String hasCouponUseRate = "";
-
+                // 使用优惠券  直接折扣，不是满减类消费
+                float directDiscountCnt = 0.f;
+                String directDiscountRate = "";
                 while (userConsumeIt.hasNext()) {
                     count++;
                     Row row = userConsumeIt.next();
@@ -93,6 +93,8 @@ public class ExtractFeatures {
                     String datePay = row.getString(6);
                     // 优惠券id
                     String couponId = row.getString(2);
+                    // 折扣
+                    String discountRate = row.getString(3);
                     // 正常消费
                     if (StringUtils.isEmpty(dateRecevied) && !StringUtils.isEmpty(datePay)) {
                         normalConsumeCnt++;
@@ -102,20 +104,25 @@ public class ExtractFeatures {
                         hasCouponNoUse++;
                     }
                     // 有消费券并且已经使用
-
                     if (!StringUtils.isEmpty(datePay) && !StringUtils.isEmpty(couponId)){
                         hasCouponUse++;
+                        if (StringUtils.notEmpty(discountRate) && discountRate.indexOf(':') ==-1){
+                            directDiscountCnt++;
+                        }
                     }
+
 
 
                 }
                 normalCounsumeRate = String.format("%.3f",normalConsumeCnt / count);
                 hasCouponNoUseRate = String.format("%.3f",hasCouponNoUse / count);
                 hasCouponUseRate = String.format("%.3f", hasCouponUse / count);
-                return  new Tuple2<String, String>(tuple._1(),hasCouponUseRate);
-//                return new Tuple2<String, String>(tuple._1(),
-//                        StringUtils.jointString(new String[]{normalCounsumeRate,
-//                        hasCouponNoUseRate,hasCouponUseRate}));
+                directDiscountRate = String.format("%.3f",directDiscountCnt / hasCouponUse);
+                String userFeatures = Constants.USER_NORMAL_CONSUME_RATE +"=" + normalCounsumeRate + "|"
+                                     + Constants.USER_HAS_COUPON_NOUSE_RATE + "=" + hasCouponNoUseRate + "|"
+                                     + Constants.USER_HAS_COUPON_USE_RATE + "=" + hasCouponUseRate + "|"
+                                     + Constants.USER_DIRECT_DISCOUNT_RATE + "=" + directDiscountRate;
+                return new Tuple2<String, String>(tuple._1(),userFeatures);
             }
         });
 

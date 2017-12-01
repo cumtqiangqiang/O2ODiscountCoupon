@@ -8,6 +8,9 @@ public class StringUtils {
         return str == null || "".equals(str) || "null".equals(str);
     }
 
+    public static  boolean notEmpty(String str){
+        return !isEmpty(str);
+    }
     public  static  String jointString(String[] arr){
             return org.apache.hadoop.util.StringUtils.join("|",arr);
 
