@@ -20,8 +20,39 @@ public interface Constants {
    //用户消费优惠券的商家数量
    String USER_COUPON_MERCHANT_COUNT = "userCousumeMerchantCount";
 
+   // 使用优惠券消费的数目
+    String USER_CONSUME_USE_COUPON_COUNT = "userConsumeUseCoupon";
+
+    String USER_CONSUME_COUNT ="userConsumeCount";
     // 用户使用不同优惠券数量
    String USER_COUPON_COUNT = "userCouponCount";
+
+   // 0~50 discount 满50减
+   String DISCOUNT_50_RATE = "discount50Rate";
+   // 50<discount<200
+   String DISCOUNT_200_RATE= "discount200Rate";
+   // 200<discount<500
+   String DISCOUNT_500_RATE = "discount500Rate";
+   // 500<discount
+   String DISCOUNT_MORE_RATE = "discountMore500Rate";
+   // 限时优惠活动.
+   String DISCOUNT_FIXED_RATE = "discountFixedRate";
+   // 直接以折扣的形式存在  不是满减
+   String DISCOUNT_DIRECT_RATE = "directDiscountRate";
+
+   // 0~50 discount 满50减
+   String DISCOUNT_50_COUNT = "discount50RateCount";
+
+   // 50<discount<200
+   String DISCOUNT_200_COUNT= "discount200RateCount";
+   // 200<discount<500
+   String DISCOUNT_500_COUNT = "discount500RateCount";
+   // 500<discount
+   String DISCOUNT_MORE_COUNT = "discountMore500RateCount";
+   // 限时优惠活动.
+   String DISCOUNT_FIXED_COUNT = "discountFixedRateCount";
+   // 直接以折扣的形式存在  不是满减
+   String DISCOUNT_DIRECT_COUNT = "directDiscountRateCount";
 
 
 }
