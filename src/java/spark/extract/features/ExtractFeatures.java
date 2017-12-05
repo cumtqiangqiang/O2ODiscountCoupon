@@ -1,5 +1,7 @@
 package spark.extract.features;
 
+import com.google.common.base.*;
+import com.google.common.base.Optional;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
@@ -52,9 +54,28 @@ public class ExtractFeatures {
                 return new Tuple2<String, Row>(row.getString(0), row);
             }
         }).persist(StorageLevel.MEMORY_AND_DISK());
-//        getConsumerNoCouponConsumeRate(rawDataRDD,false);
-//        getConsumerCouponMerchantCnt(rawDataRDD,false);
-        getUserDiffCouponUse(jsc, rawDataRDD, false);
+        JavaPairRDD<String, String> consumerNoCouponConsumeRateRDD = getConsumerNoCouponConsumeRate(rawDataRDD, false);
+        JavaPairRDD<String, String> consumerCouponMerchantCntRDD = getConsumerCouponMerchantCnt(rawDataRDD, false);
+        JavaPairRDD<String, String> diffCouponUseRDD = getUserDiffCouponUse(jsc, rawDataRDD, false);
+
+
+
+//        consumerNoCouponConsumeRateRDD.fullOuterJoin(consumerCouponMerchantCntRDD).fullOuterJoin(diffCouponUseRDD)
+//                .mapToPair(new PairFunction<Tuple2<String,Tuple2<Optional<Tuple2<Optional<String>,Optional<String>>>,Optional<String>>>, String, String>() {
+//
+//
+//                    @Override
+//                    public Tuple2<String, String> call(Tuple2<String, Tuple2<Optional<Tuple2<Optional<String>, Optional<String>>>, Optional<String>>> t) throws Exception {
+//                        return new Tuple2<String, String>(t._1(),t._2._1()+"|"+t._2()._2());
+//                    }
+//                }).foreach(new VoidFunction<Tuple2<String, String>>() {
+//            @Override
+//            public void call(Tuple2<String, String> tuple2) throws Exception {
+//                System.out.println(tuple2._1()+"="+tuple2._2());
+//
+//            }
+//        });
+
         jsc.stop();
 
 
@@ -67,7 +88,7 @@ public class ExtractFeatures {
      * @param rawDataRDD 原始数据RDD
      * @param online     是否线上消费.
      */
-    private static void getConsumerNoCouponConsumeRate(JavaPairRDD<String, Row> rawDataRDD, Boolean online) {
+    private static JavaPairRDD<String, String> getConsumerNoCouponConsumeRate(JavaPairRDD<String, Row> rawDataRDD, Boolean online) {
 
 
         JavaPairRDD<String, String> userNormalCosumeRateRDD = rawDataRDD.groupByKey().mapToPair(new PairFunction<Tuple2<String, Iterable<Row>>, String, String>() {
@@ -152,11 +173,7 @@ public class ExtractFeatures {
         });
 
 
-        Map<String, String> userNormalCosumeRateMap = userNormalCosumeRateRDD.collectAsMap();
-
-        for (Map.Entry<String, String> entry : userNormalCosumeRateMap.entrySet()) {
-            System.out.println("userid = " + entry.getKey() + " rate = " + entry.getValue());
-        }
+       return userNormalCosumeRateRDD;
 
     }
 
@@ -166,7 +183,7 @@ public class ExtractFeatures {
      * @param rawDataRDD
      * @param online
      */
-    private static void getConsumerCouponMerchantCnt(JavaPairRDD<String, Row> rawDataRDD, Boolean online) {
+    private static JavaPairRDD<String, String> getConsumerCouponMerchantCnt(JavaPairRDD<String, Row> rawDataRDD, Boolean online) {
         final JavaPairRDD<String, Row> userCouponRDD = rawDataRDD.filter(new Function<Tuple2<String, Row>, Boolean>() {
             @Override
             public Boolean call(Tuple2<String, Row> v1) throws Exception {
@@ -238,16 +255,31 @@ public class ExtractFeatures {
             }
         });
 
+          JavaPairRDD<String,String> fullMerchantCouponCntRDD = userMerchantCntRDD.fullOuterJoin(userCouponCntRDD).mapToPair(new PairFunction<Tuple2<String,Tuple2<Optional<String>,
+                             Optional<String>>>, String, String>() {
+             @Override
+             public Tuple2<String, String> call(Tuple2<String, Tuple2<Optional<String>, Optional<String>>> tuple) throws Exception {
 
-        PrintMap.printMap(Constants.USER_COUPON_MERCHANT_COUNT, userMerchantCntRDD.collectAsMap());
 
-        PrintMap.printMap(Constants.USER_COUPON_COUNT, userCouponCntRDD.collectAsMap());
+                 return new Tuple2<String, String>(tuple._1(),tuple._2()._1()+"|"+tuple._2()._2());
+             }
 
+
+
+         });
+
+//        fullMerchantCouponCntRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
+//            @Override
+//            public void call(Tuple2<String, String> tuple2) throws Exception {
+//                System.out.println(tuple2._1()+"->"+tuple2._2());
+//            }
+//        });
+           return  fullMerchantCouponCntRDD;
 
     }
 
     //这里计算不同折扣的消费数量和消费率
-    private static void getUserDiffCouponUse(JavaSparkContext jsc, final JavaPairRDD<String, Row> rawDataRDD, Boolean online) {
+    private static JavaPairRDD<String, String> getUserDiffCouponUse(JavaSparkContext jsc, final JavaPairRDD<String, Row> rawDataRDD, Boolean online) {
 
         Map<String, String> userIdConsumeCntMap = rawDataRDD.groupByKey().mapToPair(new PairFunction<Tuple2<String, Iterable<Row>>, String, String>() {
             @Override
@@ -286,13 +318,12 @@ public class ExtractFeatures {
                 float averateDiscount = Calculator.getAverage(rateList);
 
                 String cnt = Constants.USER_CONSUME_COUNT + "=" + count + "|" +
-                        Constants.USER_CONSUME_USE_COUPON_COUNT + "=" + rateList.size()+"|"+
                         Constants.DISCOUNT_AVERATE+"="+averateDiscount;
                 return new Tuple2<String, String>(userId, cnt);
             }
         }).collectAsMap();
 
-        JavaPairRDD<String, Long> userId2DiscountRDD = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, Long>() {
+        JavaPairRDD<String, String> userId2DiscountRDD = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, Long>() {
 
             @Override
             public Tuple2<String, Long> call(Tuple2<String, Row> tuple) throws Exception {
@@ -347,48 +378,71 @@ public class ExtractFeatures {
             public Long call(Long v1, Long v2) throws Exception {
                 return v1 + v2;
             }
-        });
+        }).mapToPair(new PairFunction<Tuple2<String, Long>, String, String>() {
+            @Override
+            public Tuple2<String, String> call(Tuple2<String, Long> tuple2) throws Exception {
+                if (StringUtils.hasDelimiter(tuple2._1(),"\\|")){
+                    String userId = tuple2._1().split("-")[0];
+                    String disCountFormat = tuple2._1().split("-")[1];
 
+                    return new Tuple2<String, String>(userId,disCountFormat+"="+tuple2._2());
+                }
+                return new Tuple2<String, String>(tuple2._1(),"0");
+
+            }
+
+
+        });
+        userId2DiscountRDD.groupByKey().foreach(new VoidFunction<Tuple2<String, Iterable<String>>>() {
+            @Override
+            public void call(Tuple2<String, Iterable<String>> tuple2) throws Exception {
+                System.out.println(tuple2._1() + "==" + tuple2._2());
+            }
+        });
         final Broadcast<Map<String, String>> broadcast = jsc.broadcast(userIdConsumeCntMap);
 
-        JavaPairRDD<String, String> diffDisCountRDD = userId2DiscountRDD.mapToPair(new PairFunction<Tuple2<String, Long>, String, String>() {
+//        JavaPairRDD<String, String> diffDisCountRDD = userId2DiscountRDD.mapToPair(new PairFunction<Tuple2<String, Long>, String, String>() {
+//
+//
+//            @Override
+//            public Tuple2<String, String> call(Tuple2<String, Long> tuple) throws Exception {
+//              // <userid -> userconsumeCount | userUseCouponConsumeCount | averageCount>
+//                Map<String, String> broadcastValue = broadcast.getValue();
+//                if (tuple._1().indexOf('-') != -1) {
+//                    String[] splits = tuple._1().split("-");
+//                    // 总消费数目
+//                    String value = broadcastValue.get(splits[0]);
+//                    String countV = value.split("\\|")[0];
+//                    String cnt = countV.split("=")[1];
+//
+//                    // 对应折扣的消费数目
+//                    long discountCnt = tuple._2();
+//
+//                    float rate = Float.valueOf(discountCnt) / Float.valueOf(cnt);
+//
+//                    String cntAndRateValue = splits[1] + "=" + discountCnt + "|" +
+//                            splits[2] + "=" + rate + "|"+ value.split("\\|")[1];
+//
+//                    return new Tuple2<String, String>(splits[0], cntAndRateValue);
+//
+//                }
+//                return new Tuple2<String, String>(tuple._1(), "0");
+//            }
+//        });
 
+//        System.out.println("count-====="+diffDisCountRDD.count());
+//
+//        diffDisCountRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
+//            @Override
+//            public void call(Tuple2<String, String> tuple2) throws Exception {
+//
+//                System.out.println(tuple2._1() + "==" + tuple2._2());
+//
+//            }
+//        });
 
-            @Override
-            public Tuple2<String, String> call(Tuple2<String, Long> tuple) throws Exception {
+       return userId2DiscountRDD;
 
-                Map<String, String> broadcastValue = broadcast.getValue();
-                if (tuple._1().indexOf('-') != -1) {
-                    String[] splits = tuple._1().split("-");
-                    // 总消费数目
-                    String value = broadcastValue.get(splits[0]);
-                    String countV = value.split("\\|")[0];
-                    String cnt = countV.split("=")[1];
-
-                    // 对应折扣的消费数目
-                    long discountCnt = tuple._2();
-
-                    float rate = Float.valueOf(discountCnt) / Float.valueOf(cnt);
-
-                    String cntAndRateValue = splits[1] + "=" + discountCnt + "|" +
-                            splits[2] + "=" + rate;
-
-                    return new Tuple2<String, String>(splits[0], cntAndRateValue);
-
-                }
-                return new Tuple2<String, String>(tuple._1(), "0");
-            }
-        });
-
-
-        diffDisCountRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
-            @Override
-            public void call(Tuple2<String, String> tuple2) throws Exception {
-
-                System.out.println(tuple2._1() + "==" + tuple2._2());
-
-            }
-        });
     }
 
 

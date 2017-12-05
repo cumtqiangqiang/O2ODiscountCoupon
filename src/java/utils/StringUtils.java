@@ -11,8 +11,13 @@ public class StringUtils {
     public static  boolean notEmpty(String str){
         return !isEmpty(str);
     }
-    public  static  String jointString(String[] arr){
-            return org.apache.hadoop.util.StringUtils.join("|",arr);
+
+    public static boolean hasDelimiter(String tartStr,String delimiter){
+
+        if (tartStr.indexOf(delimiter) == -1){
+            return  false;
+        }
+        return  true;
 
     }
 
