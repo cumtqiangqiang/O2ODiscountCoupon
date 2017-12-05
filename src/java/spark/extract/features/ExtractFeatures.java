@@ -278,8 +278,57 @@ public class ExtractFeatures {
 
     }
 
-    //这里计算不同折扣的消费数量和消费率
+    //这里计算不同折扣的消费数量和折扣率
     private static JavaPairRDD<String, String> getUserDiffCouponUse(JavaSparkContext jsc, final JavaPairRDD<String, Row> rawDataRDD, Boolean online) {
+
+        rawDataRDD.combineByKey(new Function<Row, Object>() {
+
+
+            @Override
+            public Object call(Row row) throws Exception {
+                // 消费券使用日
+                String datePay = row.getString(6);
+                // 优惠券id
+                String couponId = row.getString(2);
+                // 折扣
+                String discountRate = row.getString(3);
+                if (StringUtils.notEmpty(datePay) && StringUtils.notEmpty(couponId) &&
+                        StringUtils.notEmpty(discountRate) && !"fixed".equals(discountRate)) {
+                    if (discountRate.indexOf(":") != -1) {
+                        float rate = Float.valueOf(discountRate.split(":")[1]) /
+                                Float.valueOf(discountRate.split(":")[0]);
+                        int fullDis = Integer.valueOf(discountRate.split(":")[0]);
+                        if (fullDis < 50) {
+
+                            userId2DiscountFormat = userId + "-" + Constants.DISCOUNT_50_COUNT + "-" +
+                                    Constants.DISCOUNT_50_RATE;
+
+                        }
+
+                    }
+
+                }
+                return  null;
+            }
+
+        }, new Function2<Object, Row, Object>() {
+
+
+            @Override
+            public Object call(Object v1, Row v2) throws Exception {
+                return null;
+            }
+        }, new Function2<Object, Object, Object>() {
+
+
+            @Override
+            public Object call(Object v1, Object v2) throws Exception {
+                return null;
+            }
+        });
+
+
+
 
         Map<String, String> userIdConsumeCntMap = rawDataRDD.groupByKey().mapToPair(new PairFunction<Tuple2<String, Iterable<Row>>, String, String>() {
             @Override
@@ -307,7 +356,31 @@ public class ExtractFeatures {
                             float rate = Float.valueOf(discountRate.split(":")[1])/
                                     Float.valueOf(discountRate.split(":")[0]);
                             rateList.add(rate);
+                            int fullDis = Integer.valueOf(discountRate.split(":")[0]);
+                            if (fullDis < 50) {
+
+                                userId2DiscountFormat = userId + "-" + Constants.DISCOUNT_50_COUNT + "-" +
+                                        Constants.DISCOUNT_50_RATE;
+
+                            } else if (fullDis < 200) {
+                                userId2DiscountFormat = userId + "-" + Constants.DISCOUNT_200_COUNT + "-" +
+                                        Constants.DISCOUNT_200_RATE;
+                            } else if (fullDis < 500) {
+                                userId2DiscountFormat = userId + "-" + Constants.DISCOUNT_500_COUNT + "-" +
+                                        Constants.DISCOUNT_500_RATE;
+                            } else {
+                                userId2DiscountFormat = userId + "-" + Constants.DISCOUNT_MORE_COUNT + "-" +
+                                        Constants.DISCOUNT_MORE_RATE;
+                            }
+
+
+
                         }else{
+
+
+
+
+
                             rateList.add(Float.valueOf(discountRate));
                         }
 
@@ -336,17 +409,13 @@ public class ExtractFeatures {
                 // 消费券使用日
                 String datePay = row.getString(6);
                 String userId2DiscountFormat = null;
+                float rate = 0.f;
                 if (StringUtils.notEmpty(datePay) && StringUtils.notEmpty(couponId)) {
                     if (StringUtils.notEmpty(discountRate) && discountRate.indexOf(':') == -1) {
-                        if (discountRate == "fixed") {
-                            userId2DiscountFormat = userId + "-" + Constants.DISCOUNT_FIXED_COUNT + "-" +
-                                    Constants.DISCOUNT_FIXED_RATE;
-                        } else {
+                        if (discountRate != "fixed") {
+                            rate =  Float.valueOf(discountRate);
                             userId2DiscountFormat = userId + "-" + Constants.DISCOUNT_DIRECT_COUNT + "-" +
                                     Constants.DISCOUNT_DIRECT_RATE;
-                        }
-
-
                     } else {
 
                         int fullDis = Integer.valueOf(discountRate.split(":")[0]);
