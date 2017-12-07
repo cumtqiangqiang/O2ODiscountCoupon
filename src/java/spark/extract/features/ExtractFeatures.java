@@ -1,18 +1,16 @@
 package spark.extract.features;
 
-import com.google.common.base.*;
 import com.google.common.base.Optional;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
@@ -21,13 +19,10 @@ import scala.Tuple2;
 import spark.extract.features.constant.Constants;
 import utils.Calculator;
 import utils.DateUtils;
-import utils.PrintMap;
 import utils.StringUtils;
 
-import javax.xml.crypto.Data;
 import java.util.*;
 
-import static spark.extract.features.constant.Constants.DISCOUNT_200_RATE;
 
 /**
  * Created by UC227911 on 11/30/2017.
@@ -55,7 +50,8 @@ public class ExtractFeatures {
             }
         }).persist(StorageLevel.MEMORY_AND_DISK());
 
-        getMerchantConsume(rawDataRDD,false);
+        final Accumulator<String> accumulator = jsc.accumulator("",new MerchantAggrAccumulator());
+        getMerchantConsume(rawDataRDD,accumulator,false);
 //        JavaPairRDD<String, String> consumerNoCouponConsumeRateRDD = getConsumerNoCouponConsumeRate(rawDataRDD, false);
 //        JavaPairRDD<String, String> consumerCouponMerchantCntRDD = getConsumerCouponMerchantCnt(rawDataRDD, false);
 //        JavaPairRDD<String, String> diffCouponUseRDD = getUserDiffCouponUse(jsc, rawDataRDD, false);
@@ -467,8 +463,13 @@ public class ExtractFeatures {
 
     }
 
-
-    private  static  void getMerchantConsume(final JavaPairRDD<String, Row> rawDataRDD, Boolean online){
+    /**
+     * merchant
+     * @param rawDataRDD
+     * @param accumulator
+     * @param online
+     */
+    private  static  void getMerchantConsume(final JavaPairRDD<String, Row> rawDataRDD,Accumulator<String> accumulator, Boolean online){
 
         JavaPairRDD<String, Iterable<Row>> merchantId2RowsRDD = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, Row>() {
 
@@ -487,20 +488,51 @@ public class ExtractFeatures {
             @Override
             public Tuple2<String, String> call(Tuple2<String, Iterable<Row>> tuple) throws Exception {
                 // 来店里消费的总数
-                long count = 0L;
+
                 Iterator<Row> rows = tuple._2().iterator();
-                StringBuilder builder = new StringBuilder();
+                // 全部消费
+                long cnt = 0L;
+                long normalCnt = 0L;
+                long couponUsedCnt = 0L;
+                long hasCouponNoUsedCnt = 0L;
+                long dis50Cnt = 0L;
+                long dis200Cnt = 0L;
+                long dis500Cnt = 0L;
+                long dis500MoreCnt = 0L;
+                long disFixed = 0L;
+                long disDirect = 0L;
                 while (rows.hasNext()){
-
+                    cnt ++;
                     Row row = rows.next();
+                    // 消费券获得日
+                    String dateRecevied = row.getString(5);
+                    // 消费券使用日
+                    String datePay = row.getString(6);
+                    // 优惠券id
+                    String couponId = row.getString(2);
+                    // 折扣
+                    String discountRate = row.getString(3);
+                    if (StringUtils.isEmpty(dateRecevied) && !StringUtils.isEmpty(datePay)) {
+                        normalCnt++;
+                    }
+                    // 获得消费券 但是没有使用 即负样本
+                    if (StringUtils.notEmpty(couponId) && StringUtils.isEmpty(datePay)) {
+                        hasCouponNoUsedCnt++;
+                    }
+                    // 有消费券并且已经使用
+                    if (StringUtils.notEmpty(datePay) && StringUtils.notEmpty(couponId)) {
+                        couponUsedCnt++;
+                        if (StringUtils.notEmpty(discountRate) && discountRate.indexOf(':') == -1) {
 
-                    builder.append(row.getString(0)+"|");
+                        }
+                    }
+
 
                 }
 
 
 
-                return new Tuple2<String, String>(tuple._1(),builder.toString());
+                return new Tuple2<String, String>(tuple._1(),"");
             }
         }).sortByKey().foreach(new VoidFunction<Tuple2<String, String>>() {
             @Override
