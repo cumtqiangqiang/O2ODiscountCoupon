@@ -54,26 +54,14 @@ public class ExtractFeatures {
                 return new Tuple2<String, Row>(row.getString(0), row);
             }
         }).persist(StorageLevel.MEMORY_AND_DISK());
+
+        getMerchantConsume(rawDataRDD,false);
 //        JavaPairRDD<String, String> consumerNoCouponConsumeRateRDD = getConsumerNoCouponConsumeRate(rawDataRDD, false);
 //        JavaPairRDD<String, String> consumerCouponMerchantCntRDD = getConsumerCouponMerchantCnt(rawDataRDD, false);
-        JavaPairRDD<String, String> diffCouponUseRDD = getUserDiffCouponUse(jsc, rawDataRDD, false);
+//        JavaPairRDD<String, String> diffCouponUseRDD = getUserDiffCouponUse(jsc, rawDataRDD, false);
 
 
-//        consumerNoCouponConsumeRateRDD.fullOuterJoin(consumerCouponMerchantCntRDD).fullOuterJoin(diffCouponUseRDD)
-//                .mapToPair(new PairFunction<Tuple2<String,Tuple2<Optional<Tuple2<Optional<String>,Optional<String>>>,Optional<String>>>, String, String>() {
-//
-//
-//                    @Override
-//                    public Tuple2<String, String> call(Tuple2<String, Tuple2<Optional<Tuple2<Optional<String>, Optional<String>>>, Optional<String>>> t) throws Exception {
-//                        return new Tuple2<String, String>(t._1(),t._2._1()+"|"+t._2()._2());
-//                    }
-//                }).foreach(new VoidFunction<Tuple2<String, String>>() {
-//            @Override
-//            public void call(Tuple2<String, String> tuple2) throws Exception {
-//                System.out.println(tuple2._1()+"="+tuple2._2());
-//
-//            }
-//        });
+
 
         jsc.stop();
 
@@ -276,7 +264,13 @@ public class ExtractFeatures {
 
     }
 
-    //    这里计算不同折扣的消费数量和折扣率
+    /**
+     * 计算了不同折扣的使用次数以及使用率和平均折扣率
+     * @param jsc
+     * @param rawDataRDD
+     * @param online
+     * @return
+     */
     private static JavaPairRDD<String, String> getUserDiffCouponUse(JavaSparkContext jsc, final JavaPairRDD<String, Row> rawDataRDD, Boolean online) {
 
         //每个用户的 平均折扣率
@@ -345,6 +339,7 @@ public class ExtractFeatures {
             }
         });
 
+        System.out.println("------------------------------------------------------------------");
 
         JavaPairRDD<String, Long> userIdDisFormat2CntRDD = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, Long>() {
 
@@ -431,7 +426,33 @@ public class ExtractFeatures {
 
                  }
 
-                return new Tuple2<String, String>(userId,fullDis.toString());
+                return new Tuple2<String, String>(userId,
+                        fullDis.toString()+"cnt="+cnt);
+            }
+        }).mapValues(new Function<String, String>() {
+
+            @Override
+            public String call(String v1) throws Exception {
+                String cnt = StringUtils.getFieldFromConcatString(v1,"\\|","cnt");
+
+                String dis50 = StringUtils.getFieldFromConcatString(v1,"\\|",Constants.DISCOUNT_50_COUNT);
+                String dis200 = StringUtils.getFieldFromConcatString(v1,"\\|",Constants.DISCOUNT_200_COUNT);
+                String dis500 = StringUtils.getFieldFromConcatString(v1,"\\|",Constants.DISCOUNT_500_COUNT);
+                String dis500more = StringUtils.getFieldFromConcatString(v1,"\\|",Constants.DISCOUNT_MORE_COUNT);
+                String disDirect = StringUtils.getFieldFromConcatString(v1,"\\|",Constants.DISCOUNT_DIRECT_COUNT);
+
+                float dis50Rate = StringUtils.notEmpty(dis50) ? Float.valueOf(dis50) / Float.valueOf(cnt) : 0.f;
+                float dis200Rate = StringUtils.notEmpty(dis200) ? Float.valueOf(dis200) / Float.valueOf(cnt) : 0.f;
+                float dis500Rate = StringUtils.notEmpty(dis500) ? Float.valueOf(dis500) / Float.valueOf(cnt) : 0.f;
+                float dis500MoreRate = StringUtils.notEmpty(dis500more) ? Float.valueOf(dis500more) / Float.valueOf(cnt) : 0.f;
+                float disDirectRate = StringUtils.notEmpty(disDirect) ? Float.valueOf(disDirect) / Float.valueOf(cnt) : 0.f;
+
+                return v1+"|"+Constants.DISCOUNT_50_RATE + "=" + dis50Rate + "|" +
+                        Constants.DISCOUNT_200_RATE + "=" + dis200Rate + "|" +
+                        Constants.DISCOUNT_500_RATE + "=" + dis500Rate + "|" +
+                        Constants.DISCOUNT_MORE_RATE + "=" + dis500MoreRate + "|" +
+                        Constants.DISCOUNT_DIRECT_RATE + "=" + disDirectRate;
+
             }
         }).sortByKey().foreach(new VoidFunction<Tuple2<String, String>>() {
             @Override
@@ -445,4 +466,51 @@ public class ExtractFeatures {
         return null;
 
     }
+
+
+    private  static  void getMerchantConsume(final JavaPairRDD<String, Row> rawDataRDD, Boolean online){
+
+        JavaPairRDD<String, Iterable<Row>> merchantId2RowsRDD = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, Row>() {
+
+
+            @Override
+            public Tuple2<String, Row> call(Tuple2<String, Row> tuple) throws Exception {
+                Row row = tuple._2();
+                String merchantId = row.getString(1);
+                return new Tuple2<String, Row>(merchantId, row);
+            }
+        }).groupByKey().persist(StorageLevel.MEMORY_ONLY());
+
+        merchantId2RowsRDD.mapToPair(new PairFunction<Tuple2<String,Iterable<Row>>, String, String>() {
+
+
+            @Override
+            public Tuple2<String, String> call(Tuple2<String, Iterable<Row>> tuple) throws Exception {
+                // 来店里消费的总数
+                long count = 0L;
+                Iterator<Row> rows = tuple._2().iterator();
+                StringBuilder builder = new StringBuilder();
+                while (rows.hasNext()){
+
+                    Row row = rows.next();
+
+                    builder.append(row.getString(0)+"|");
+
+                }
+
+
+
+                return new Tuple2<String, String>(tuple._1(),builder.toString());
+            }
+        }).sortByKey().foreach(new VoidFunction<Tuple2<String, String>>() {
+            @Override
+            public void call(Tuple2<String, String> tuple2) throws Exception {
+                System.out.println("merchantId:"+tuple2._1()+" users:"+tuple2._2());
+            }
+        });
+
+
+
+    }
+
 }
