@@ -96,5 +96,29 @@ public class StringUtils {
         return buffer.toString();
     }
 
+    public static String aggregate(String v1,String v2){
+
+        String[] strs = v2.split("\\|");
+        String results = v1;
+        for (String str: strs){
+
+            String[] kv = str.split("=");
+            String oldV1 = getFieldFromConcatString(v1,"\\|",kv[0]);
+            String oldV2 = getFieldFromConcatString(v2,"\\|",kv[0]);
+
+            long newV = Long.valueOf(oldV1)+Long.valueOf(oldV2);
+            String newVStr = String.valueOf(newV);
+           results = setFieldInConcatString(results,"\\|",kv[0],newVStr);
+
+        }
+
+
+        return results;
+
+
+    }
+
+
+
 
 }

@@ -15,15 +15,15 @@ public class MerchantAggrAccumulator  implements AccumulatorParam<String>{
 
     @Override
     public String zero(String initialValue) {
-        return Constants.MERCHANT_COUNT + "=" +"0"
-                + Constants.MERCHANT_NORMAL_CONSUME_COUNT + "=" +"0"
-                + Constants.MERCHANT_HASCOUPON_NOUSE_CONSUME_COUNT + "=" +"0"
-                + Constants.MERCHANT_HASCOUPON_USED_CONSUME_COUNT + "=" +"0"
-                + Constants.MERCHANT_DISCOUNT_50_COUNT + "=" +"0"
-                + Constants.MERCHANT_DISCOUNT_200_COUNT + "=" +"0"
-                + Constants.MERCHANT_DISCOUNT_500_COUNT + "=" +"0"
-                + Constants.MERCHANT_DISCOUNT_MORE_COUNT + "=" +"0"
-                + Constants.MERCHANT_DISCOUNT_FIXED_COUNT + "=" +"0"
+        return Constants.MERCHANT_COUNT + "=" +"0" +"|"
+                + Constants.MERCHANT_NORMAL_CONSUME_COUNT + "=" +"0"+"|"
+                + Constants.MERCHANT_HASCOUPON_NOUSE_CONSUME_COUNT + "=" +"0"+"|"
+                + Constants.MERCHANT_HASCOUPON_USED_CONSUME_COUNT + "=" +"0"+"|"
+                + Constants.MERCHANT_DISCOUNT_50_COUNT + "=" +"0"+"|"
+                + Constants.MERCHANT_DISCOUNT_200_COUNT + "=" +"0"+"|"
+                + Constants.MERCHANT_DISCOUNT_500_COUNT + "=" +"0"+"|"
+                + Constants.MERCHANT_DISCOUNT_MORE_COUNT + "=" +"0"+"|"
+                + Constants.MERCHANT_DISCOUNT_FIXED_COUNT + "=" +"0"+"|"
                 + Constants.MERCHANT_DISCOUNT_DIRECT_COUNT + "=" +"0";
     }
 

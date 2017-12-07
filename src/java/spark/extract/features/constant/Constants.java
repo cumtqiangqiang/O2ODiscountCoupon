@@ -10,7 +10,7 @@ public interface Constants {
     String TRAIN_OFFLINE_DATA_PATH = "/Users/fiona/Desktop/ML/O2ODiscountCoupon/Resource/tb01ccf_offline_stage1_train.csv";
     String TRAIN_ONLINE_DATA_PATH = "C:\\Users\\UC227911\\Desktop\\Mine\\O2O\\O2ODiscountCoupon\\Resource\\tb02ccf_online_stage1_train.csv";
     String TEST_OFFLINE_DATA_PATH = "C:\\Users\\UC227911\\Desktop\\Mine\\O2O\\O2ODiscountCoupon\\Resource\\tb03ccf_offline_stage1_test_revised.csv";
-    String LESS_OFFLINE_DATA_PATH = "C:\\Users\\UC227911\\Desktop\\Mine\\O2O\\O2ODiscountCoupon\\TestResource\\test_offline_stage1_train.csv";
+    String LESS_OFFLINE_DATA_PATH = "/Users/fiona/Desktop/ML/O2ODiscountCoupon/TestResource/test_offline_stage1_train.csv";
 
     String USER_NORMAL_CONSUME_RATE = "normalCounsumeRate";
     String USER_HAS_COUPON_NOUSE_RATE = "hasCouponNoUseRate";
@@ -111,6 +111,16 @@ public interface Constants {
     // 直接以折扣的形式存在  不是满减
     String MERCHANT_DISCOUNT_DIRECT_COUNT = "MerchantDirectDiscountRateCount";
 
+    String MERCHANT_DISCOUNT_INITIAL_COUNT = Constants.MERCHANT_COUNT + "=" +"0" +"|"
+            + Constants.MERCHANT_NORMAL_CONSUME_COUNT + "=" +"0"+"|"
+            + Constants.MERCHANT_HASCOUPON_NOUSE_CONSUME_COUNT + "=" +"0"+"|"
+            + Constants.MERCHANT_HASCOUPON_USED_CONSUME_COUNT + "=" +"0"+"|"
+            + Constants.MERCHANT_DISCOUNT_50_COUNT + "=" +"0"+"|"
+            + Constants.MERCHANT_DISCOUNT_200_COUNT + "=" +"0"+"|"
+            + Constants.MERCHANT_DISCOUNT_500_COUNT + "=" +"0"+"|"
+            + Constants.MERCHANT_DISCOUNT_MORE_COUNT + "=" +"0"+"|"
+            + Constants.MERCHANT_DISCOUNT_FIXED_COUNT + "=" +"0"+"|"
+            + Constants.MERCHANT_DISCOUNT_DIRECT_COUNT + "=" +"0";
 
 
 

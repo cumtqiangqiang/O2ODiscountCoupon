@@ -471,75 +471,148 @@ public class ExtractFeatures {
      */
     private  static  void getMerchantConsume(final JavaPairRDD<String, Row> rawDataRDD,Accumulator<String> accumulator, Boolean online){
 
-        JavaPairRDD<String, Iterable<Row>> merchantId2RowsRDD = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, Row>() {
+        JavaPairRDD<String, String> merchantIdCntRDD = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, String>() {
 
 
             @Override
-            public Tuple2<String, Row> call(Tuple2<String, Row> tuple) throws Exception {
+            public Tuple2<String, String> call(Tuple2<String, Row> tuple) throws Exception {
                 Row row = tuple._2();
+                //商户id
                 String merchantId = row.getString(1);
-                return new Tuple2<String, Row>(merchantId, row);
-            }
-        }).groupByKey().persist(StorageLevel.MEMORY_ONLY());
+                // 优惠券id
+                String couponId = row.getString(2);
+                // 折扣
+                String discountRate = row.getString(3);
 
-        merchantId2RowsRDD.mapToPair(new PairFunction<Tuple2<String,Iterable<Row>>, String, String>() {
+                // 消费券获得日
+                String dateRecevied = row.getString(5);
+                // 消费券使用日
+                String datePay = row.getString(6);
+
+                String value = StringUtils.setFieldInConcatString(Constants.MERCHANT_DISCOUNT_INITIAL_COUNT,
+                        "\\|", Constants.MERCHANT_COUNT, "1"
+
+                );
 
 
-            @Override
-            public Tuple2<String, String> call(Tuple2<String, Iterable<Row>> tuple) throws Exception {
-                // 来店里消费的总数
+                if (StringUtils.isEmpty(dateRecevied) && !StringUtils.isEmpty(datePay)) {
+//                    normalCnt++;
+                }
+                // 获得消费券 但是没有使用 即负样本
+                if (StringUtils.notEmpty(couponId) && StringUtils.isEmpty(datePay)) {
+//                    hasCouponNoUsedCnt++;
+                }
+                // 有消费券并且已经使用
+                if (StringUtils.notEmpty(datePay) && StringUtils.notEmpty(couponId)) {
+//                    couponUsedCnt++;
+                    if (StringUtils.notEmpty(discountRate) && discountRate.indexOf(':') == -1) {
 
-                Iterator<Row> rows = tuple._2().iterator();
-                // 全部消费
-                long cnt = 0L;
-                long normalCnt = 0L;
-                long couponUsedCnt = 0L;
-                long hasCouponNoUsedCnt = 0L;
-                long dis50Cnt = 0L;
-                long dis200Cnt = 0L;
-                long dis500Cnt = 0L;
-                long dis500MoreCnt = 0L;
-                long disFixed = 0L;
-                long disDirect = 0L;
-                while (rows.hasNext()){
-                    cnt ++;
-                    Row row = rows.next();
-                    // 消费券获得日
-                    String dateRecevied = row.getString(5);
-                    // 消费券使用日
-                    String datePay = row.getString(6);
-                    // 优惠券id
-                    String couponId = row.getString(2);
-                    // 折扣
-                    String discountRate = row.getString(3);
-                    if (StringUtils.isEmpty(dateRecevied) && !StringUtils.isEmpty(datePay)) {
-                        normalCnt++;
                     }
-                    // 获得消费券 但是没有使用 即负样本
-                    if (StringUtils.notEmpty(couponId) && StringUtils.isEmpty(datePay)) {
-                        hasCouponNoUsedCnt++;
-                    }
-                    // 有消费券并且已经使用
-                    if (StringUtils.notEmpty(datePay) && StringUtils.notEmpty(couponId)) {
-                        couponUsedCnt++;
-                        if (StringUtils.notEmpty(discountRate) && discountRate.indexOf(':') == -1) {
-
-                        }
-                    }
-
-
                 }
 
 
-
-                return new Tuple2<String, String>(tuple._1(),"");
-            }
-        }).sortByKey().foreach(new VoidFunction<Tuple2<String, String>>() {
-            @Override
-            public void call(Tuple2<String, String> tuple2) throws Exception {
-                System.out.println("merchantId:"+tuple2._1()+" users:"+tuple2._2());
+                return new Tuple2<String, String>(merchantId, value);
             }
         });
+
+        merchantIdCntRDD.reduceByKey(new Function2<String, String, String>() {
+            @Override
+            public String call(String v1, String v2) throws Exception {
+                return StringUtils.aggregate(v1,v2);
+            }
+        }).foreach(new VoidFunction<Tuple2<String, String>>() {
+            @Override
+            public void call(Tuple2<String, String> tuple2) throws Exception {
+                System.out.println("merchantId :" +tuple2._1()+" value:"+tuple2._2());
+            }
+        });
+
+//        JavaPairRDD<String, Iterable<Row>> merchantId2RowsRDD = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, Row>() {
+//
+//
+//            @Override
+//            public Tuple2<String, Row> call(Tuple2<String, Row> tuple) throws Exception {
+//                Row row = tuple._2();
+//                String merchantId = row.getString(1);
+//                return new Tuple2<String, Row>(merchantId, row);
+//            }
+//        }).groupByKey().persist(StorageLevel.MEMORY_ONLY());
+//
+//        merchantId2RowsRDD.mapToPair(new PairFunction<Tuple2<String,Iterable<Row>>, String, String>() {
+//
+//
+//            @Override
+//            public Tuple2<String, String> call(Tuple2<String, Iterable<Row>> tuple) throws Exception {
+//                // 来店里消费的总数
+//
+//                Iterator<Row> rows = tuple._2().iterator();
+//                // 全部消费
+//                long cnt = 0L;
+//                long normalCnt = 0L;
+//                long couponUsedCnt = 0L;
+//                long hasCouponNoUsedCnt = 0L;
+//                long dis50Cnt = 0L;
+//                long dis200Cnt = 0L;
+//                long dis500Cnt = 0L;
+//                long dis500MoreCnt = 0L;
+//                long disFixed = 0L;
+//                long disDirect = 0L;
+//                String value = Constants.MERCHANT_DISCOUNT_INITIAL_COUNT;
+//                while (rows.hasNext()){
+//
+//                    value = StringUtils.setFieldInConcatString(value,"\\|",Constants.MERCHANT_COUNT,"1");
+//                    cnt ++;
+//                    Row row = rows.next();
+//                    // 消费券获得日
+//                    String dateRecevied = row.getString(5);
+//                    // 消费券使用日
+//                    String datePay = row.getString(6);
+//                    // 优惠券id
+//                    String couponId = row.getString(2);
+//                    // 折扣
+//                    String discountRate = row.getString(3);
+//                    if (StringUtils.isEmpty(dateRecevied) && !StringUtils.isEmpty(datePay)) {
+//                        normalCnt++;
+//                    }
+//                    // 获得消费券 但是没有使用 即负样本
+//                    if (StringUtils.notEmpty(couponId) && StringUtils.isEmpty(datePay)) {
+//                        hasCouponNoUsedCnt++;
+//                    }
+//                    // 有消费券并且已经使用
+//                    if (StringUtils.notEmpty(datePay) && StringUtils.notEmpty(couponId)) {
+//                        couponUsedCnt++;
+//                        if (StringUtils.notEmpty(discountRate) && discountRate.indexOf(':') == -1) {
+//
+//                        }
+//                    }
+//
+//
+//                }
+//
+//
+//
+//                return new Tuple2<String, String>(tuple._1(),Constants.MERCHANT_COUNT+"="+cnt
+//                         +Constants.MERCHANT_NORMAL_CONSUME_COUNT +"="+normalCnt
+//
+//
+//
+//                        );
+//            }
+//        }).reduceByKey(new Function2<String, String, String>() {
+//            @Override
+//            public String call(String v1, String v2) throws Exception {
+//
+//
+//                return null;
+//            }
+//        });
+
+//                sortByKey().foreach(new VoidFunction<Tuple2<String, String>>() {
+//            @Override
+//            public void call(Tuple2<String, String> tuple2) throws Exception {
+//                System.out.println("merchantId:"+tuple2._1()+" users:"+tuple2._2());
+//            }
+//        });
 
 
 
