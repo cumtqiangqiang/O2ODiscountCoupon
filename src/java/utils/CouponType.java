@@ -9,16 +9,17 @@ public class CouponType {
 
   public  static  int couponDiscountType(String discount){
       if (StringUtils.isEmpty(discount)){
-          return -1;
+          return Constants.COUPON_NO;
 
       }
 
       if (discount.indexOf(":") == -1) {
           if (0.f< Float.valueOf(discount) && Float.valueOf(discount) < 1){
 
-              return 0;
+              return Constants.COUPON_DIRECT;
+
           }else if ("fixed".equals(discount)){
-              return 1;
+              return Constants.COUPON_FIXED;
           }else {
 
               System.out.println(String.format("s%  is wrong discount format",discount));
@@ -30,13 +31,13 @@ public class CouponType {
 
           int discountFull = Integer.valueOf(discount.split(":")[0]);
           if (discountFull <= 50) {
-                return 2;
+                return Constants.COUPON_50;
           } else if (discountFull <= 200) {
-               return 3;
+               return Constants.COUPON_200;
           } else if (discountFull <= 500) {
-                return 4;
+                return Constants.COUPON_500;
           } else {
-                return 5;
+                return Constants.COUPON_500_MORE;
           }
 
 

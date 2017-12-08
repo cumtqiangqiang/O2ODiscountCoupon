@@ -1,5 +1,8 @@
 package utils;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
 /**
  * Created by UC227911 on 11/30/2017.
  */
@@ -43,7 +46,8 @@ public class StringUtils {
      * @param field 字段
      * @return 字段值
      */
-    public static String getFieldFromConcatString(String str,
+
+    public static String getFieldFromConcatString( String str,
                                                   String delimiter, String field) {
         try {
             String[] fields = str.split(delimiter);

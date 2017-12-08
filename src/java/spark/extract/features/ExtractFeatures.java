@@ -7,10 +7,7 @@ import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.api.java.function.*;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
@@ -18,6 +15,7 @@ import org.apache.spark.storage.StorageLevel;
 import scala.Tuple2;
 import spark.extract.features.constant.Constants;
 import utils.Calculator;
+import utils.CouponType;
 import utils.DateUtils;
 import utils.StringUtils;
 
@@ -64,6 +62,13 @@ public class ExtractFeatures {
 
     }
 
+    private  static void getUserConsumeFeatures(JavaPairRDD<String, Row> rawDataRDD, Boolean online){
+
+
+
+
+    }
+
 
     /**
      * 获得用户在没有优惠券的情况下的消费率
@@ -75,6 +80,8 @@ public class ExtractFeatures {
 
 
         JavaPairRDD<String, String> userNormalCosumeRateRDD = rawDataRDD.groupByKey().mapToPair(new PairFunction<Tuple2<String, Iterable<Row>>, String, String>() {
+
+            private static final long serialVersionUID = 7095759952436551348L;
 
             @Override
             public Tuple2<String, String> call(Tuple2<String, Iterable<Row>> tuple) throws Exception {
@@ -168,6 +175,8 @@ public class ExtractFeatures {
      */
     private static JavaPairRDD<String, String> getConsumerCouponMerchantCnt(JavaPairRDD<String, Row> rawDataRDD, Boolean online) {
         final JavaPairRDD<String, Row> userCouponRDD = rawDataRDD.filter(new Function<Tuple2<String, Row>, Boolean>() {
+            private static final long serialVersionUID = 7267123752154076088L;
+
             @Override
             public Boolean call(Tuple2<String, Row> v1) throws Exception {
                 Row row = v1._2();
@@ -186,6 +195,8 @@ public class ExtractFeatures {
         // 用户使用优惠券消费的商家数量
         JavaPairRDD<String, String> userMerchantCntRDD = userCouponRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, String>() {
 
+            private static final long serialVersionUID = -2838142263946526031L;
+
             @Override
             public Tuple2<String, String> call(Tuple2<String, Row> tuple) throws Exception {
                 String userId = tuple._1();
@@ -194,16 +205,22 @@ public class ExtractFeatures {
                 return new Tuple2<String, String>(userId, merchantId);
             }
         }).distinct().mapToPair(new PairFunction<Tuple2<String, String>, String, Long>() {
+            private static final long serialVersionUID = -650744009038281544L;
+
             @Override
             public Tuple2<String, Long> call(Tuple2<String, String> t) throws Exception {
                 return new Tuple2<String, Long>(t._1(), 1L);
             }
         }).reduceByKey(new Function2<Long, Long, Long>() {
+            private static final long serialVersionUID = -2559276693655973000L;
+
             @Override
             public Long call(Long v1, Long v2) throws Exception {
                 return v1 + v2;
             }
         }).mapToPair(new PairFunction<Tuple2<String, Long>, String, String>() {
+            private static final long serialVersionUID = 7959581893957713246L;
+
             @Override
             public Tuple2<String, String> call(Tuple2<String, Long> t) throws Exception {
                 return new Tuple2<String, String>(t._1(), Constants.USER_COUPON_MERCHANT_COUNT + "=" + t._2());
@@ -215,6 +232,8 @@ public class ExtractFeatures {
         JavaPairRDD<String, String> userCouponCntRDD = userCouponRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, String>() {
 
 
+            private static final long serialVersionUID = -5622750387705793200L;
+
             @Override
             public Tuple2<String, String> call(Tuple2<String, Row> t) throws Exception {
                 return new Tuple2<String, String>(t._1(), t._2().getString(2));
@@ -222,25 +241,34 @@ public class ExtractFeatures {
         }).distinct().mapToPair(new PairFunction<Tuple2<String, String>, String, Long>() {
 
 
+            private static final long serialVersionUID = -2392405283969984175L;
+
             @Override
             public Tuple2<String, Long> call(Tuple2<String, String> tuple2) throws Exception {
                 return new Tuple2<String, Long>(tuple2._1(), 1L);
             }
         }).reduceByKey(new Function2<Long, Long, Long>() {
+            private static final long serialVersionUID = 8982009813497966326L;
+
             @Override
             public Long call(Long v1, Long v2) throws Exception {
                 return v1 + v2;
             }
         }).mapToPair(new PairFunction<Tuple2<String, Long>, String, String>() {
+            private static final long serialVersionUID = 4766990857360250840L;
+
             @Override
             public Tuple2<String, String> call(Tuple2<String, Long> t) throws Exception {
                 return new Tuple2<String, String>(t._1(), Constants.USER_COUPON_COUNT + "=" + t._2());
             }
         });
 
-        JavaPairRDD<String, String> fullMerchantCouponCntRDD = userMerchantCntRDD.fullOuterJoin(userCouponCntRDD).mapToPair(new PairFunction<Tuple2<String, Tuple2<Optional<String>,
+        JavaPairRDD<String, String> fullMerchantCouponCntRDD = userMerchantCntRDD.fullOuterJoin(userCouponCntRDD)
+                .mapToPair(new PairFunction<Tuple2<String, Tuple2<Optional<String>,
                 Optional<String>>>, String, String>() {
-            @Override
+                    private static final long serialVersionUID = 1281842562126417305L;
+
+                    @Override
             public Tuple2<String, String> call(Tuple2<String, Tuple2<Optional<String>, Optional<String>>> tuple) throws Exception {
 
 
@@ -272,6 +300,8 @@ public class ExtractFeatures {
         //每个用户的 平均折扣率
         rawDataRDD.combineByKey(new Function<Row, Tuple2<Float, Integer>>() {
 
+            private static final long serialVersionUID = -7817596185734575057L;
+
             @Override
             public Tuple2<Float, Integer> call(Row row) throws Exception {
 
@@ -284,7 +314,7 @@ public class ExtractFeatures {
                 float rate = 0.f;
                 if (StringUtils.notEmpty(datePay) && StringUtils.notEmpty(couponId) &&
                         StringUtils.notEmpty(discountRate) && !"fixed".equals(discountRate)) {
-                    if (discountRate.indexOf(":") != -1) {
+                    if (discountRate.contains(":")) {
                         rate = Float.valueOf(discountRate.split(":")[1]) /
                                 Float.valueOf(discountRate.split(":")[0]);
 
@@ -298,6 +328,8 @@ public class ExtractFeatures {
             }
 
         }, new Function2<Tuple2<Float, Integer>, Row, Tuple2<Float, Integer>>() {
+            private static final long serialVersionUID = -2791986475933532657L;
+
             @Override
             public Tuple2<Float, Integer> call(Tuple2<Float, Integer> v1, Row row) throws Exception {
 
@@ -310,7 +342,7 @@ public class ExtractFeatures {
                 float rate = 0.f;
                 if (StringUtils.notEmpty(datePay) && StringUtils.notEmpty(couponId) &&
                         StringUtils.notEmpty(discountRate) && !"fixed".equals(discountRate)) {
-                    if (discountRate.indexOf(":") != -1) {
+                    if (discountRate.contains(":")) {
                         rate = Float.valueOf(discountRate.split(":")[1]) /
                                 Float.valueOf(discountRate.split(":")[0]);
 
@@ -323,11 +355,15 @@ public class ExtractFeatures {
                 return new Tuple2<Float, Integer>(v1._1() + rate, v1._2() + 1);
             }
         }, new Function2<Tuple2<Float, Integer>, Tuple2<Float, Integer>, Tuple2<Float, Integer>>() {
+            private static final long serialVersionUID = -7613381077352106726L;
+
             @Override
             public Tuple2<Float, Integer> call(Tuple2<Float, Integer> v1, Tuple2<Float, Integer> v2) throws Exception {
                 return new Tuple2<Float, Integer>(v1._1()+v2._1(),v1._2()+v2._2());
             }
         }).foreach(new VoidFunction<Tuple2<String, Tuple2<Float, Integer>>>() {
+            private static final long serialVersionUID = 973345503965707444L;
+
             @Override
             public void call(Tuple2<String, Tuple2<Float, Integer>> tuple) throws Exception {
                 System.out.println(tuple._1()+"="+tuple._2()._1()/tuple._2()._2());
@@ -353,7 +389,7 @@ public class ExtractFeatures {
                 String discountFormat = "";
                 if (StringUtils.notEmpty(datePay) && StringUtils.notEmpty(couponId) &&
                         StringUtils.notEmpty(discountRate) && !"fixed".equals(discountRate)) {
-                    if (discountRate.indexOf(":") != -1) {
+                    if (discountRate.contains(":")) {
                         int discountFull = Integer.valueOf(discountRate.split(":")[0]);
                         if (discountFull <= 50) {
                             discountFormat = Constants.DISCOUNT_50_COUNT;
@@ -375,6 +411,8 @@ public class ExtractFeatures {
                 return new Tuple2<String, Long>(userId,1L);
             }
         }).reduceByKey(new Function2<Long, Long, Long>() {
+            private static final long serialVersionUID = -1981800031350592684L;
+
             @Override
             public Long call(Long v1, Long v2) throws Exception {
                 return v1 + v2;
@@ -411,7 +449,7 @@ public class ExtractFeatures {
                 long cnt = 0L;
                 while (discounts.hasNext()){
                      String dis = discounts.next();
-                     if (dis.indexOf("=") ==-1){
+                     if (!dis.contains("=")){
                          cnt += Long.valueOf(dis);
                      }else {
                          cnt += Long.valueOf((dis.split("=")[1]));
@@ -471,8 +509,101 @@ public class ExtractFeatures {
      */
     private  static  void getMerchantConsume(final JavaPairRDD<String, Row> rawDataRDD,Accumulator<String> accumulator, Boolean online){
 
-        JavaPairRDD<String, String> merchantIdCntRDD = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, String>() {
+        /**
+         * 商户消费的不同用户量
+         */
+        JavaPairRDD<String, Long> merchantId2uniqueUserRDD = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, String>() {
+            private static final long serialVersionUID = 6813455970266645101L;
 
+            @Override
+            public Tuple2<String, String> call(Tuple2<String, Row> tuple) throws Exception {
+
+                Row row = tuple._2();
+                // 优惠券id
+                String userId = row.getString(0);
+                //商户id
+                String merchantId = row.getString(1);
+
+                return new Tuple2<String, String>(merchantId, merchantId + "-" + userId);
+            }
+        }).distinct().mapToPair(new PairFunction<Tuple2<String, String>, String, Long>() {
+
+
+            private static final long serialVersionUID = 3612407545251726586L;
+
+            @Override
+            public Tuple2<String, Long> call(Tuple2<String, String> tuple) throws Exception {
+                return new Tuple2<String, Long>(tuple._1(), 1L);
+            }
+        }).reduceByKey(new Function2<Long, Long, Long>() {
+            private static final long serialVersionUID = -5832822333208648758L;
+
+            @Override
+            public Long call(Long v1, Long v2) throws Exception {
+                return v1 + v2;
+            }
+        });
+
+        rawDataRDD.filter(new Function<Tuple2<String, Row>, Boolean>() {
+            private static final long serialVersionUID = -6164994096654132755L;
+
+            @Override
+            public Boolean call(Tuple2<String, Row> v1) throws Exception {
+                Row row = v1._2();
+                String couponId = row.getString(2);
+                if (StringUtils.isEmpty(couponId)){
+                    return false;
+                }else {
+                    return true;
+                }
+
+            }
+        }).mapToPair(new PairFunction<Tuple2<String,Row>, String, String>() {
+            private static final long serialVersionUID = -7353585028640054067L;
+
+            @Override
+            public Tuple2<String, String> call(Tuple2<String, Row> tuple2) throws Exception {
+                Row row = tuple2._2();
+                String merchantId = row.getString(1);
+                String couponId = row.getString(2);
+
+                return new Tuple2<String, String>(merchantId,merchantId+"-"+couponId);
+            }
+        }).distinct().mapToPair(new PairFunction<Tuple2<String,String>, String, Long>() {
+
+
+            private static final long serialVersionUID = -7961139007587765808L;
+
+            @Override
+            public Tuple2<String, Long> call(Tuple2<String, String> tuple2) throws Exception {
+                return new Tuple2<String, Long>(tuple2._1(), 1L);
+            }
+        }).reduceByKey(new Function2<Long, Long, Long>() {
+            private static final long serialVersionUID = 617014754989552625L;
+
+            @Override
+            public Long call(Long v1, Long v2) throws Exception {
+                return v1 + v2;
+            }
+        }).foreach(new VoidFunction<Tuple2<String, Long>>() {
+            private static final long serialVersionUID = 2806043266590287736L;
+
+            @Override
+            public void call(Tuple2<String, Long> tuple2) throws Exception {
+                System.out.println("merchant :" + tuple2._1() + "cnt:"+tuple2._2());
+            }
+        });
+
+        System.out.println("-----------------------------------------------");
+        /**
+         *
+         * 商户消费的不同折扣量计算
+         */
+        JavaPairRDD<String, String> merchantIdCntRDD = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>,
+                String, String>() {
+
+
+            private static final long serialVersionUID = 6813455970266645101L;
 
             @Override
             public Tuple2<String, String> call(Tuple2<String, Row> tuple) throws Exception {
@@ -489,46 +620,197 @@ public class ExtractFeatures {
                 // 消费券使用日
                 String datePay = row.getString(6);
 
-                String value = StringUtils.setFieldInConcatString(Constants.MERCHANT_DISCOUNT_INITIAL_COUNT,
-                        "\\|", Constants.MERCHANT_COUNT, "1"
+                String cntValue = Constants.MERCHANT_DISCOUNT_INITIAL_COUNT;
+                cntValue = StringUtils.setFieldInConcatString(cntValue,
+                        "\\|", Constants.MERCHANT_COUNT, "1");
 
-                );
 
-
-                if (StringUtils.isEmpty(dateRecevied) && !StringUtils.isEmpty(datePay)) {
-//                    normalCnt++;
+                if (StringUtils.isEmpty(couponId) && !StringUtils.isEmpty(datePay)) {
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|", Constants.MERCHANT_NORMAL_CONSUME_COUNT, "1");
                 }
                 // 获得消费券 但是没有使用 即负样本
                 if (StringUtils.notEmpty(couponId) && StringUtils.isEmpty(datePay)) {
-//                    hasCouponNoUsedCnt++;
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|", Constants.MERCHANT_HASCOUPON_NOUSE_CONSUME_COUNT, "1");
+
                 }
                 // 有消费券并且已经使用
                 if (StringUtils.notEmpty(datePay) && StringUtils.notEmpty(couponId)) {
-//                    couponUsedCnt++;
-                    if (StringUtils.notEmpty(discountRate) && discountRate.indexOf(':') == -1) {
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|", Constants.MERCHANT_HASCOUPON_USED_CONSUME_COUNT, "1");
+                   int interval = DateUtils.getDayTimeInterval(dateRecevied,datePay);
+                   if (interval < 15){
+                       cntValue = StringUtils.setFieldInConcatString(cntValue,
+                               "\\|", Constants.MERCHANT_DISCOUNT_LESS15_COUNT, "1");
+                   }
+
+                    int coupponType = CouponType.couponDiscountType(discountRate);
+                    switch (coupponType) {
+
+                        case Constants.COUPON_DIRECT:
+                            cntValue = StringUtils.setFieldInConcatString(cntValue,
+                                    "\\|", Constants.MERCHANT_DISCOUNT_DIRECT_COUNT, "1");
+
+                            break;
+                        case Constants.COUPON_FIXED:
+                            cntValue = StringUtils.setFieldInConcatString(cntValue,
+                                    "\\|", Constants.MERCHANT_DISCOUNT_FIXED_COUNT, "1");
+
+                            break;
+                        case Constants.COUPON_50:
+                            cntValue = StringUtils.setFieldInConcatString(cntValue,
+                                    "\\|", Constants.MERCHANT_DISCOUNT_50_COUNT, "1");
+
+                            break;
+                        case Constants.COUPON_200:
+                            cntValue = StringUtils.setFieldInConcatString(cntValue,
+                                    "\\|", Constants.MERCHANT_DISCOUNT_200_COUNT, "1");
+
+                            break;
+                        case Constants.COUPON_500:
+                            cntValue = StringUtils.setFieldInConcatString(cntValue,
+                                    "\\|", Constants.MERCHANT_DISCOUNT_500_COUNT, "1");
+
+                            break;
+                        case Constants.COUPON_500_MORE:
+                            cntValue = StringUtils.setFieldInConcatString(cntValue,
+                                    "\\|", Constants.MERCHANT_DISCOUNT_MORE_COUNT, "1");
+
 
                     }
                 }
 
 
-                return new Tuple2<String, String>(merchantId, value);
+                return new Tuple2<String, String>(merchantId, cntValue);
             }
         });
 
-        merchantIdCntRDD.reduceByKey(new Function2<String, String, String>() {
+
+        JavaPairRDD<String, String> merchantId2AggraRDD = merchantIdCntRDD.reduceByKey(new Function2<String, String, String>() {
             @Override
             public String call(String v1, String v2) throws Exception {
-                return StringUtils.aggregate(v1,v2);
+                return StringUtils.aggregate(v1, v2);
             }
-        }).foreach(new VoidFunction<Tuple2<String, String>>() {
+        });
+
+        merchantId2AggraRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
             @Override
             public void call(Tuple2<String, String> tuple2) throws Exception {
                 System.out.println("merchantId :" +tuple2._1()+" value:"+tuple2._2());
             }
         });
 
-//        JavaPairRDD<String, Iterable<Row>> merchantId2RowsRDD = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, Row>() {
+        System.out.println("---------------------------------------------------------------");
+        /**
+         * 不同折扣率计算
+         */
+        merchantId2AggraRDD.mapValues(new Function<String, String>() {
+
+            private static final long serialVersionUID = 5209174191613684516L;
+
+            @Override
+            public String call(String v1) throws Exception {
+                // 未使用优惠券
+                long hasCouponNoUsedCnt = Long.valueOf(StringUtils.getFieldFromConcatString(v1,
+                        "\\|",Constants.MERCHANT_HASCOUPON_NOUSE_CONSUME_COUNT));
+                // 使用优惠券
+                long couponUsedCnt = Long.valueOf(StringUtils.getFieldFromConcatString(v1,
+                        "\\|",Constants.MERCHANT_HASCOUPON_USED_CONSUME_COUNT));
+                // 总消费次数
+                long cnt = Long.valueOf(StringUtils.getFieldFromConcatString(v1,
+                        "\\|",Constants.MERCHANT_COUNT));
+
+                long dis50cnt = Long.valueOf(StringUtils.getFieldFromConcatString(v1,
+                        "\\|",Constants.MERCHANT_DISCOUNT_50_COUNT));
+                long dis200cnt = Long.valueOf(StringUtils.getFieldFromConcatString(v1,
+                        "\\|",Constants.MERCHANT_DISCOUNT_200_COUNT));
+
+                long dis500cnt = Long.valueOf(StringUtils.getFieldFromConcatString(v1,
+                        "\\|",Constants.MERCHANT_DISCOUNT_500_COUNT));
+                long disMoreCnt = Long.valueOf(StringUtils.getFieldFromConcatString(v1,
+                        "\\|",Constants.MERCHANT_DISCOUNT_MORE_COUNT));
+                long disDirectcnt = Long.valueOf(StringUtils.getFieldFromConcatString(v1,
+                        "\\|",Constants.MERCHANT_DISCOUNT_DIRECT_COUNT));
+
+                long disFixedcnt = Long.valueOf(StringUtils.getFieldFromConcatString(v1,
+                        "\\|",Constants.MERCHANT_DISCOUNT_FIXED_COUNT));
+
+                int disLess15cnt = Integer.valueOf(StringUtils.getFieldFromConcatString(v1,
+                        "\\|",Constants.MERCHANT_DISCOUNT_LESS15_COUNT));
+
+                // 优惠券发放量
+                long couponCnt = hasCouponNoUsedCnt + couponUsedCnt;
+                String initialRate = Constants.MERCHANT_DISCOUNT_INITIAL_RATE;
+                Map<String,Float> rateMap = new HashMap<String, Float>();
+                if (couponCnt > 0 && couponUsedCnt > 0){
+                    // 核销率
+                    float couponChargeOffRate = Float.valueOf(couponUsedCnt)/Float.valueOf(couponCnt);
+                    rateMap.put(Constants.MERCHANT_COUPON_CHARGEOFF_RATE,couponChargeOffRate);
+
+                }
+                if (dis50cnt > 0 ){
+
+                    float dis50Rate = Float.valueOf(dis50cnt)/Float.valueOf(cnt);
+                    rateMap.put(Constants.MERCHANT_DISCOUNT_50_RATE,dis50Rate);
+                }
+                if (dis200cnt > 0){
+                    float dis200Rate = Float.valueOf(dis200cnt)/Float.valueOf(cnt);
+                    rateMap.put(Constants.MERCHANT_DISCOUNT_200_RATE,dis200Rate);
+
+                }
+                if (dis500cnt > 0){
+                    float dis500Rate = Float.valueOf(dis500cnt)/Float.valueOf(cnt);
+                    rateMap.put(Constants.MERCHANT_DISCOUNT_500_RATE,dis500Rate);
+                }
+                if (disMoreCnt > 0){
+
+                    float disMoreRate = Float.valueOf(disMoreCnt)/Float.valueOf(cnt);
+                    rateMap.put(Constants.MERCHANT_DISCOUNT_MORE_RATE,disMoreRate);
+                }
+
+                if (disDirectcnt > 0){
+                    float disDirctRate = Float.valueOf(disDirectcnt)/Float.valueOf(cnt);
+                    rateMap.put(Constants.MERCHANT_DISCOUNT_DIRECT_RATE,disDirctRate);
+
+                }
+                if (disFixedcnt > 0){
+                    float disFixRate=Float.valueOf(disDirectcnt)/Float.valueOf(cnt);
+                    rateMap.put(Constants.MERCHANT_DISCOUNT_FIXED_RATE,disFixRate);
+                }
+
+                if (disLess15cnt > 0){
+                    float disLess15Rate= 1 - Float.valueOf(disLess15cnt)/15;
+                    rateMap.put(Constants.MERCHANT_DISCOUNT_LESS15_RATE,disLess15Rate);
+
+                }
+
+
+                for (Map.Entry<String,Float> entry : rateMap.entrySet()) {
+
+                    initialRate = StringUtils.setFieldInConcatString(initialRate, "\\|",
+                            entry.getKey(), String.valueOf(entry.getValue()));
+                }
+
+
+
+                return initialRate;
+            }
+        }).sortByKey().foreach(new VoidFunction<Tuple2<String, String>>() {
+            @Override
+            public void call(Tuple2<String, String> tuple2) throws Exception {
+                System.out.println("merchantId:"+tuple2._1()+" users:"+tuple2._2());
+            }
+        });
+
+
+
+
+//        JavaPairRDD<String, Iterable<Row>> merchantId2RowsRDD = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>,
+//                String, Row>() {
 //
+//
+//            private static final long serialVersionUID = 6813455970266645101L;
 //
 //            @Override
 //            public Tuple2<String, Row> call(Tuple2<String, Row> tuple) throws Exception {
@@ -538,8 +820,10 @@ public class ExtractFeatures {
 //            }
 //        }).groupByKey().persist(StorageLevel.MEMORY_ONLY());
 //
-//        merchantId2RowsRDD.mapToPair(new PairFunction<Tuple2<String,Iterable<Row>>, String, String>() {
+//        JavaPairRDD<String, String> merchantIdCouponContRDD = merchantId2RowsRDD.mapToPair(new PairFunction<Tuple2<String,
+//                Iterable<Row>>, String, String>() {
 //
+//            private static final long serialVersionUID = 3612407545251726586L;
 //
 //            @Override
 //            public Tuple2<String, String> call(Tuple2<String, Iterable<Row>> tuple) throws Exception {
@@ -555,13 +839,13 @@ public class ExtractFeatures {
 //                long dis200Cnt = 0L;
 //                long dis500Cnt = 0L;
 //                long dis500MoreCnt = 0L;
-//                long disFixed = 0L;
-//                long disDirect = 0L;
-//                String value = Constants.MERCHANT_DISCOUNT_INITIAL_COUNT;
-//                while (rows.hasNext()){
+//                long disFixedCnt = 0L;
+//                long disDirectCnt = 0L;
+//                Map<String,Long> cntMap = new HashMap<String, Long>();
+//                String cntValueInit = Constants.MERCHANT_DISCOUNT_INITIAL_COUNT;
+//                while (rows.hasNext()) {
 //
-//                    value = StringUtils.setFieldInConcatString(value,"\\|",Constants.MERCHANT_COUNT,"1");
-//                    cnt ++;
+//                    cnt++;
 //                    Row row = rows.next();
 //                    // 消费券获得日
 //                    String dateRecevied = row.getString(5);
@@ -573,48 +857,85 @@ public class ExtractFeatures {
 //                    String discountRate = row.getString(3);
 //                    if (StringUtils.isEmpty(dateRecevied) && !StringUtils.isEmpty(datePay)) {
 //                        normalCnt++;
+//                        cntMap.put(Constants.MERCHANT_NORMAL_CONSUME_COUNT,normalCnt);
 //                    }
 //                    // 获得消费券 但是没有使用 即负样本
 //                    if (StringUtils.notEmpty(couponId) && StringUtils.isEmpty(datePay)) {
 //                        hasCouponNoUsedCnt++;
+//                        cntMap.put(Constants.MERCHANT_HASCOUPON_NOUSE_CONSUME_COUNT,hasCouponNoUsedCnt);
 //                    }
 //                    // 有消费券并且已经使用
 //                    if (StringUtils.notEmpty(datePay) && StringUtils.notEmpty(couponId)) {
 //                        couponUsedCnt++;
-//                        if (StringUtils.notEmpty(discountRate) && discountRate.indexOf(':') == -1) {
+//                        cntMap.put(Constants.MERCHANT_HASCOUPON_USED_CONSUME_COUNT,couponUsedCnt);
+//                        int coupponType = CouponType.couponDiscountType(discountRate);
+//                        switch (coupponType) {
+//
+//                            case Constants.COUPON_DIRECT:
+//                                disDirectCnt++;
+//                                cntMap.put(Constants.MERCHANT_DISCOUNT_DIRECT_COUNT,disDirectCnt);
+//                                break;
+//                            case Constants.COUPON_FIXED:
+//                                disFixedCnt++;
+//                                cntMap.put(Constants.MERCHANT_DISCOUNT_FIXED_COUNT,disFixedCnt);
+//                                break;
+//                            case Constants.COUPON_50:
+//                                dis50Cnt++;
+//                                cntMap.put(Constants.MERCHANT_DISCOUNT_50_COUNT,dis50Cnt);
+//                                break;
+//                            case Constants.COUPON_200:
+//                                dis200Cnt++;
+//                                cntMap.put(Constants.MERCHANT_DISCOUNT_200_COUNT,dis200Cnt);
+//                                break;
+//                            case Constants.COUPON_500:
+//                                dis500Cnt++;
+//                                cntMap.put(Constants.MERCHANT_DISCOUNT_500_COUNT,dis500Cnt);
+//                                break;
+//                            case Constants.COUPON_500_MORE:
+//                                dis500MoreCnt++;
+//                                cntMap.put(Constants.MERCHANT_DISCOUNT_MORE_COUNT,dis500MoreCnt);
 //
 //                        }
+//
+//
 //                    }
 //
 //
 //                }
 //
+//                cntMap.put(Constants.MERCHANT_COUNT,cnt);
+//                for (Map.Entry<String,Long> entry : cntMap.entrySet()) {
+//
+//                    cntValueInit = StringUtils.setFieldInConcatString(cntValueInit, "\\|",
+//                            entry.getKey(), String.valueOf(entry.getValue()));
+//                }
 //
 //
-//                return new Tuple2<String, String>(tuple._1(),Constants.MERCHANT_COUNT+"="+cnt
-//                         +Constants.MERCHANT_NORMAL_CONSUME_COUNT +"="+normalCnt
 //
+//                return new Tuple2<String, String>(tuple._1(), cntValueInit);
 //
-//
-//                        );
 //            }
-//        }).reduceByKey(new Function2<String, String, String>() {
+//        });
+//
+//
+//        JavaPairRDD<String, String> merichantAggCntRDD = merchantIdCouponContRDD.reduceByKey(new Function2<String, String, String>() {
+//            private static final long serialVersionUID = 1041297081176697626L;
+//
 //            @Override
 //            public String call(String v1, String v2) throws Exception {
-//
-//
-//                return null;
+//                return StringUtils.aggregate(v1, v2);
 //            }
-//        });
-
-//                sortByKey().foreach(new VoidFunction<Tuple2<String, String>>() {
+//        }).persist(StorageLevel.MEMORY_ONLY());
+//        merichantAggCntRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
+//            private static final long serialVersionUID = -2665112235642262045L;
+//
 //            @Override
 //            public void call(Tuple2<String, String> tuple2) throws Exception {
-//                System.out.println("merchantId:"+tuple2._1()+" users:"+tuple2._2());
+//                System.out.println("merchantId :" +tuple2._1()+" value:"+tuple2._2());
 //            }
 //        });
-
-
+//
+//        System.out.println("---------------------------------------------------------------------");
 
     }
 

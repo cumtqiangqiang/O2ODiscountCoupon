@@ -31,11 +31,12 @@ public class StringUtilsTest {
                 + Constants.MERCHANT_DISCOUNT_DIRECT_COUNT + "=" +"0";
 
 
-       String string= StringUtils.aggregate(str1,str2);
-        String[] arr = string.split("\\|");
-        for (String str : arr){
-            System.out.println(str);
-        }
+
+
+        long a = 5L;
+        long b = 7L;
+        System.out.println(Float.valueOf(a)/b);
+
 
     }
 
