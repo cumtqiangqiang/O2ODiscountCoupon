@@ -18,12 +18,6 @@ public class Calculator {
       return sum / cnt;
   }
 
-//  public static float getDiscountRate(String dis){
-//
-//
-//
-//  }
-
 
 
 

@@ -65,6 +65,29 @@ public class ExtractFeatures {
     private  static void getUserConsumeFeatures(JavaPairRDD<String, Row> rawDataRDD, Boolean online){
 
 
+        rawDataRDD.mapToPair(new PairFunction<Tuple2<String,Row>, String, String>() {
+
+
+            @Override
+            public Tuple2<String, String> call(Tuple2<String, Row> tuple) throws Exception {
+                Row row = tuple._2();
+                // 消费券获得日
+                String dateRecevied = row.getString(5);
+                // 消费券使用日
+                String datePay = row.getString(6);
+                // 优惠券id
+                String couponId = row.getString(2);
+                // 折扣
+                String discountRate = row.getString(3);
+
+
+
+                return null;
+            }
+        });
+
+
+
 
 
     }
@@ -610,77 +633,8 @@ public class ExtractFeatures {
                 Row row = tuple._2();
                 //商户id
                 String merchantId = row.getString(1);
-                // 优惠券id
-                String couponId = row.getString(2);
-                // 折扣
-                String discountRate = row.getString(3);
 
-                // 消费券获得日
-                String dateRecevied = row.getString(5);
-                // 消费券使用日
-                String datePay = row.getString(6);
-
-                String cntValue = Constants.MERCHANT_DISCOUNT_INITIAL_COUNT;
-                cntValue = StringUtils.setFieldInConcatString(cntValue,
-                        "\\|", Constants.MERCHANT_COUNT, "1");
-
-
-                if (StringUtils.isEmpty(couponId) && !StringUtils.isEmpty(datePay)) {
-                    cntValue = StringUtils.setFieldInConcatString(cntValue,
-                            "\\|", Constants.MERCHANT_NORMAL_CONSUME_COUNT, "1");
-                }
-                // 获得消费券 但是没有使用 即负样本
-                if (StringUtils.notEmpty(couponId) && StringUtils.isEmpty(datePay)) {
-                    cntValue = StringUtils.setFieldInConcatString(cntValue,
-                            "\\|", Constants.MERCHANT_HASCOUPON_NOUSE_CONSUME_COUNT, "1");
-
-                }
-                // 有消费券并且已经使用
-                if (StringUtils.notEmpty(datePay) && StringUtils.notEmpty(couponId)) {
-                    cntValue = StringUtils.setFieldInConcatString(cntValue,
-                            "\\|", Constants.MERCHANT_HASCOUPON_USED_CONSUME_COUNT, "1");
-                   int interval = DateUtils.getDayTimeInterval(dateRecevied,datePay);
-                   if (interval < 15){
-                       cntValue = StringUtils.setFieldInConcatString(cntValue,
-                               "\\|", Constants.MERCHANT_DISCOUNT_LESS15_COUNT, "1");
-                   }
-
-                    int coupponType = CouponType.couponDiscountType(discountRate);
-                    switch (coupponType) {
-
-                        case Constants.COUPON_DIRECT:
-                            cntValue = StringUtils.setFieldInConcatString(cntValue,
-                                    "\\|", Constants.MERCHANT_DISCOUNT_DIRECT_COUNT, "1");
-
-                            break;
-                        case Constants.COUPON_FIXED:
-                            cntValue = StringUtils.setFieldInConcatString(cntValue,
-                                    "\\|", Constants.MERCHANT_DISCOUNT_FIXED_COUNT, "1");
-
-                            break;
-                        case Constants.COUPON_50:
-                            cntValue = StringUtils.setFieldInConcatString(cntValue,
-                                    "\\|", Constants.MERCHANT_DISCOUNT_50_COUNT, "1");
-
-                            break;
-                        case Constants.COUPON_200:
-                            cntValue = StringUtils.setFieldInConcatString(cntValue,
-                                    "\\|", Constants.MERCHANT_DISCOUNT_200_COUNT, "1");
-
-                            break;
-                        case Constants.COUPON_500:
-                            cntValue = StringUtils.setFieldInConcatString(cntValue,
-                                    "\\|", Constants.MERCHANT_DISCOUNT_500_COUNT, "1");
-
-                            break;
-                        case Constants.COUPON_500_MORE:
-                            cntValue = StringUtils.setFieldInConcatString(cntValue,
-                                    "\\|", Constants.MERCHANT_DISCOUNT_MORE_COUNT, "1");
-
-
-                    }
-                }
-
+                String cntValue = getValuefeatureMapHelper(row,true);
 
                 return new Tuple2<String, String>(merchantId, cntValue);
             }
@@ -938,5 +892,96 @@ public class ExtractFeatures {
 //        System.out.println("---------------------------------------------------------------------");
 
     }
+
+    private  static String getValuefeatureMapHelper(Row row,boolean isMerahcnt){
+
+        CouponFeatures feature = null;
+        if (isMerahcnt){
+             feature = new MerchantFeatures();
+        }else {
+            feature = new UserFeatures();
+        }
+        // 优惠券id
+        String couponId = row.getString(2);
+        // 折扣
+        String discountRate = row.getString(3);
+
+        // 消费券获得日
+        String dateRecevied = row.getString(5);
+        // 消费券使用日
+        String datePay = row.getString(6);
+
+        String cntValue =feature.getInitialCountValue();
+        cntValue = StringUtils.setFieldInConcatString(cntValue,
+                "\\|", feature.getMerchangCnt(), "1");
+
+
+        if (StringUtils.isEmpty(couponId) && !StringUtils.isEmpty(datePay)) {
+            cntValue = StringUtils.setFieldInConcatString(cntValue,
+                    "\\|",feature.getNormalConsumeCnt(), "1");
+        }
+        // 获得消费券 但是没有使用 即负样本
+        if (StringUtils.notEmpty(couponId) && StringUtils.isEmpty(datePay)) {
+            cntValue = StringUtils.setFieldInConcatString(cntValue,
+                    "\\|", feature.getHasCouponNoUsedCnt(), "1");
+
+        }
+        // 有消费券并且已经使用
+        if (StringUtils.notEmpty(datePay) && StringUtils.notEmpty(couponId)) {
+            cntValue = StringUtils.setFieldInConcatString(cntValue,
+                    "\\|",feature.getHasCouponUsedCnt(), "1");
+            int interval = DateUtils.getDayTimeInterval(dateRecevied,datePay);
+            if (interval < 15){
+                cntValue = StringUtils.setFieldInConcatString(cntValue,
+                        "\\|",feature.getLess15ConsumeCnt(), "1");
+            }
+
+            int coupponType = CouponType.couponDiscountType(discountRate);
+            switch (coupponType) {
+
+                case Constants.COUPON_DIRECT:
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|",feature.getDirectDiscountCnt(), "1");
+
+                    break;
+                case Constants.COUPON_FIXED:
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|",feature.getFixedDiscountCnt(), "1");
+
+                    break;
+                case Constants.COUPON_50:
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|",feature.getDiscount50Cnt(), "1");
+
+                    break;
+                case Constants.COUPON_200:
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|",feature.getDiscount200Cnt(), "1");
+
+                    break;
+                case Constants.COUPON_500:
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|",feature.getDiscount500Cnt(), "1");
+
+                    break;
+                case Constants.COUPON_500_MORE:
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|",feature.getDiscount500MoreCnt(), "1");
+
+
+            }
+        }
+
+
+            return  cntValue;
+
+
+
+    }
+
+
+
+
+
 
 }
