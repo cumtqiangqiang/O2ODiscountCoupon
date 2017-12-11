@@ -11,9 +11,7 @@ abstract class CouponFeatures {
 
     abstract String getInitialRateValue();
 
-    String getMerchangCnt(){
-        return Constants.MERCHANT_COUNT;
-    };
+    abstract String getConsumeCnt();
 
     abstract String getNormalConsumeCnt();
     abstract String getHasCouponUsedCnt();
@@ -21,13 +19,24 @@ abstract class CouponFeatures {
     abstract String getLess15ConsumeCnt();
     abstract String getFixedDiscountCnt();
     abstract String getDirectDiscountCnt();
+    abstract String getCouponRate();
     abstract String getDiscount50Cnt();
     abstract String getDiscount200Cnt();
     abstract String getDiscount500Cnt();
     abstract String getDiscount500MoreCnt();
 
+    abstract String getCouponNormalConsumeRate();
+    abstract String getCouponHasNoUsedConsumeRate();
+    abstract String getCouponHasUsedConsumeRate();
+    abstract String getCouponLess15ConsumeRate();
 
-
+    abstract String getCouponChargeOffRate();
+    abstract String getCoupon50Rate();
+    abstract String getCoupon200Rate();
+    abstract String getCoupon500Rate();
+    abstract String getCoupon500MoreRate();
+    abstract String getCouponDirectRate();
+    abstract String getCouponFixedRate();
 
 
 }

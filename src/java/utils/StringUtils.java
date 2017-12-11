@@ -1,5 +1,7 @@
 package utils;
 
+import spark.extract.features.constant.Constants;
+
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
@@ -109,11 +111,17 @@ public class StringUtils {
             String[] kv = str.split("=");
             String oldV1 = getFieldFromConcatString(v1,"\\|",kv[0]);
             String oldV2 = getFieldFromConcatString(v2,"\\|",kv[0]);
+            if (kv[0].equals(Constants.DISCOUNT_RATE)){
+                float rate = Float.valueOf(oldV1) + Float.valueOf(oldV2);
+                results = setFieldInConcatString(results,"\\|",kv[0],String.valueOf(rate));
 
-            long newV = Long.valueOf(oldV1)+Long.valueOf(oldV2);
-            String newVStr = String.valueOf(newV);
-           results = setFieldInConcatString(results,"\\|",kv[0],newVStr);
 
+
+            }else {
+                long newV = Long.valueOf(oldV1) + Long.valueOf(oldV2);
+                String newVStr = String.valueOf(newV);
+                results = setFieldInConcatString(results, "\\|", kv[0], newVStr);
+            }
         }
 
 

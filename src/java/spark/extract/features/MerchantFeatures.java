@@ -19,6 +19,11 @@ public class MerchantFeatures extends CouponFeatures {
     }
 
     @Override
+    String getConsumeCnt() {
+        return Constants.MERCHANT_COUNT;
+    }
+
+    @Override
     String getNormalConsumeCnt() {
         return Constants.MERCHANT_NORMAL_CONSUME_COUNT;
     }
@@ -50,6 +55,11 @@ public class MerchantFeatures extends CouponFeatures {
     }
 
     @Override
+    String getCouponRate() {
+        return Constants.DISCOUNT_RATE;
+    }
+
+    @Override
     String getDiscount50Cnt() {
         return Constants.MERCHANT_DISCOUNT_50_COUNT;
     }
@@ -67,5 +77,60 @@ public class MerchantFeatures extends CouponFeatures {
     @Override
     String getDiscount500MoreCnt() {
         return Constants.MERCHANT_DISCOUNT_MORE_COUNT;
+    }
+
+    @Override
+    String getCouponNormalConsumeRate() {
+        return Constants.MERCHANT_NORMAL_CONSUME_COUNT;
+    }
+
+    @Override
+    String getCouponHasNoUsedConsumeRate() {
+        return Constants.MERCHANT_HASCOUPON_NOUSE_CONSUME_RATE;
+    }
+
+    @Override
+    String getCouponHasUsedConsumeRate() {
+        return Constants.MERCHANT_HASCOUPON_USED_CONSUME_RATE;
+    }
+
+    @Override
+    String getCouponLess15ConsumeRate() {
+        return Constants.MERCHANT_DISCOUNT_LESS15_RATE;
+    }
+
+    @Override
+    String getCouponChargeOffRate() {
+        return Constants.MERCHANT_COUPON_CHARGEOFF_RATE;
+    }
+
+    @Override
+    String getCoupon50Rate() {
+        return Constants.MERCHANT_DISCOUNT_50_RATE;
+    }
+
+    @Override
+    String getCoupon200Rate() {
+        return Constants.MERCHANT_DISCOUNT_200_RATE;
+    }
+
+    @Override
+    String getCoupon500Rate() {
+        return Constants.MERCHANT_DISCOUNT_500_RATE;
+    }
+
+    @Override
+    String getCoupon500MoreRate() {
+        return Constants.MERCHANT_DISCOUNT_MORE_RATE;
+    }
+
+    @Override
+    String getCouponDirectRate() {
+        return Constants.MERCHANT_DISCOUNT_DIRECT_RATE;
+    }
+
+    @Override
+    String getCouponFixedRate() {
+        return Constants.MERCHANT_DISCOUNT_FIXED_RATE;
     }
 }

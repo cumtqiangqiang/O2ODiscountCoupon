@@ -13,7 +13,7 @@ public class CouponType {
 
       }
 
-      if (discount.indexOf(":") == -1) {
+      if (!discount.contains(":")) {
           if (0.f< Float.valueOf(discount) && Float.valueOf(discount) < 1){
 
               return Constants.COUPON_DIRECT;
@@ -45,6 +45,25 @@ public class CouponType {
 
       return -1;
 
+
+  }
+
+  public static float getDiscountRate(String discount){
+
+    if (StringUtils.isEmpty(discount) || "fixed".equals(discount)){
+
+        return 0.f;
+    }else if (discount.contains(":")){
+          String[] arr = discount.split(":");
+
+          return Float.valueOf(arr[1])/Float.valueOf(arr[0]);
+
+      } else  if ( 0 <Float.valueOf(discount) && Float.valueOf(discount) < 1){
+
+        return Float.valueOf(discount);
+    }
+
+     return 0.f;
 
   }
 
