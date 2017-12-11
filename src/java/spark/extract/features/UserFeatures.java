@@ -132,4 +132,43 @@ public class UserFeatures  extends   CouponFeatures {
     String getCouponFixedRate() {
         return Constants.USER_DISCOUNT_FIXED_RATE;
     }
+
+    String getUserAction(int actionType){
+
+        String value = "";
+        switch (actionType){
+            case Constants.USER_ACTION_CLICK :
+                value = Constants.USER_ACTION_0_COUNT;
+                break;
+            case  Constants.USER_ACTION_BUY:
+                value = Constants.USER_ACTION_1_COUNT;
+                break;
+            case  Constants.USER_ACTION_GET_COUPON:
+                value = Constants.USER_ACTION_2_COUNT;
+
+        }
+
+        return value;
+    }
+
+
+    String getUserActionRate(int actionType){
+
+        String value = "";
+        switch (actionType){
+            case Constants.USER_ACTION_CLICK :
+                value = Constants.USER_ACTION_0_RATE;
+                break;
+            case  Constants.USER_ACTION_BUY:
+                value = Constants.USER_ACTION_1_RATE;
+                break;
+            case  Constants.USER_ACTION_GET_COUPON:
+                value = Constants.USER_ACTION_2_RATE;
+
+        }
+
+        return value;
+    }
+
+
 }

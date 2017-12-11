@@ -11,7 +11,7 @@ public interface Constants {
     String TRAIN_ONLINE_DATA_PATH = "C:\\Users\\UC227911\\Desktop\\Mine\\O2O\\O2ODiscountCoupon\\Resource\\tb02ccf_online_stage1_train.csv";
     String TEST_OFFLINE_DATA_PATH = "C:\\Users\\UC227911\\Desktop\\Mine\\O2O\\O2ODiscountCoupon\\Resource\\tb03ccf_offline_stage1_test_revised.csv";
     String LESS_OFFLINE_DATA_PATH = "C:\\Users\\UC227911\\Desktop\\Mine\\O2O\\O2ODiscountCoupon\\TestResource\\test_offline_stage1_train.csv";
-
+    String LESS_ONLINE_DATA_PATH = "C:\\Users\\UC227911\\Desktop\\Mine\\O2O\\O2ODiscountCoupon\\TestResource\\onlineTest.csv";
     // 正常消费
     String USER_NORMATL_CONSUME_COUNT = "UserNormalConsumeCnt";
     // 获得优惠券后使用时间间隔
@@ -43,11 +43,19 @@ public interface Constants {
     // 直接以折扣的形式存在  不是满减
     String  USER_DISCOUNT_DIRECT_COUNT = "UserDirectDiscountRateCnt";
 
+    String USER_ACTION_0_COUNT = "UserActionClickCnt";
+    String USER_ACTION_1_COUNT = "UserActionBuyCnt";
+    String USER_ACTION_2_COUNT = "UserActionGetCouponCnt";
+
     /**
      *
      * 用户不同的折扣的消费情况计算
      *
      */
+    String USER_ACTION_0_RATE = "UserActionClickRate";
+    String USER_ACTION_1_RATE = "UserActionBuyRate";
+    String USER_ACTION_2_RATE = "UserActionGetCouponRate";
+
     String USER_NORMAL_CONSUME_RATE = "UsernormalCounsumeRate";
     String USER_HAS_COUPON_NOUSE_RATE = "UserHasCouponNoUseRate";
     String USER_HAS_COUPON_USE_RATE = "UserHasCouponUseRate";
@@ -204,6 +212,11 @@ public interface Constants {
     int COUPON_500 = 4;
     // 高于500 满减
     int COUPON_500_MORE = 5;
+
+    int USER_ACTION_CLICK = 0;
+    int USER_ACTION_BUY = 1;
+    int USER_ACTION_GET_COUPON = 2;
+
 
 
 }
