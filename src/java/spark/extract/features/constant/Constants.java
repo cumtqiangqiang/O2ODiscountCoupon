@@ -7,7 +7,7 @@ public interface Constants {
     /**
      * 文件路径
      */
-    String TRAIN_OFFLINE_DATA_PATH = "/Users/fiona/Desktop/ML/O2ODiscountCoupon/Resource/tb01ccf_offline_stage1_train.csv";
+    String TRAIN_OFFLINE_DATA_PATH = "C:\\Users\\UC227911\\Desktop\\Mine\\O2O\\O2ODiscountCoupon\\Resource\\tb01ccf_offline_stage1_train.csv";
     String TRAIN_ONLINE_DATA_PATH = "C:\\Users\\UC227911\\Desktop\\Mine\\O2O\\O2ODiscountCoupon\\Resource\\tb02ccf_online_stage1_train.csv";
     String TEST_OFFLINE_DATA_PATH = "C:\\Users\\UC227911\\Desktop\\Mine\\O2O\\O2ODiscountCoupon\\Resource\\tb03ccf_offline_stage1_test_revised.csv";
     String LESS_OFFLINE_DATA_PATH = "C:\\Users\\UC227911\\Desktop\\Mine\\O2O\\O2ODiscountCoupon\\TestResource\\test_offline_stage1_train.csv";
@@ -46,6 +46,8 @@ public interface Constants {
     String USER_ACTION_0_COUNT = "UserActionClickCnt";
     String USER_ACTION_1_COUNT = "UserActionBuyCnt";
     String USER_ACTION_2_COUNT = "UserActionGetCouponCnt";
+
+
 
     /**
      *
@@ -194,6 +196,31 @@ public interface Constants {
                                             + MERCHANT_DISCOUNT_FIXED_RATE +"=" +"0" +"|"
                                             + MERCHANT_DISCOUNT_DIRECT_RATE +"=" +"0" + "|"
                                             + MERCHANT_DISCOUNT_LESS15_RATE +"=" +"0";
+
+    /**
+     * 用户对每个商家的特征
+     */
+    // 在每个店正常消费的次数
+    String USER_PER_MERCHANT_NORMATL_CONSUME_CNT = "UserPerMerchantNormalConsumeCnt";
+    // 在每个店优惠券消费的次数
+    String USER_PER_MERCHANT_COUPON_CONSUME_CNT = "UserPerMerchantCouponConsumeCnt";
+    // 在每个店获取优惠券但未消费的次数
+    String USER_PER_MERCHANT_HASCOUPON_NOUSED_CONSUME_CNT = "UserPerMerchantHasCouponNoUsedConsumeCnt";
+    // 用户在某个店正常消费占自己所有正常消费的比率
+    String USER_MERCHANT_NORMATL_CONSUME_RATE = "UserMerchantNormalConsumeRate";
+    // 用户在某个店使用优惠券消费占自己所有使用优惠券消费的比率
+    String USER_MERCHANT_COUPON_CONSUME_RATE = "UserMerchantCouponConsumeRate";
+    // 用户在某个店领取优惠券但未使用占自己所有领取优惠券未使用的比率
+    String USER_MERCHANT_NOUSE_COUP_CONSUME_RATE = "UserMerchantHasCoupNoUsedRate";
+
+    // 每个用户对每个店正常消费率
+    String USER_PER_MER_NORM_CONSUME_RATE = "UserPerMerNormConsumeRate";
+    // 每个用户对每个店使用优惠券消费率
+    String USER_PER_MER_COUPON_CONSUME_RATE = "UserPerMerCoupConsumeRate";
+    // 每个用户对每个店有优惠券但未使用消费率
+    String USER_PER_MER_COUPON_NOUSED_CONSUME_RATE = "UserPerMerCoupNoUsedConsumeRate";
+
+
 
     /**
      * 优惠券的优惠类型

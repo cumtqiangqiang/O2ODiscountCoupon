@@ -6,8 +6,10 @@ import org.apache.log4j.Logger;
 import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.*;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
@@ -15,6 +17,7 @@ import org.apache.spark.storage.StorageLevel;
 import org.omg.PortableInterceptor.USER_EXCEPTION;
 import scala.Tuple2;
 import spark.extract.features.constant.Constants;
+import spark.extract.features.domain.UserMerchantFeature;
 import utils.Calculator;
 import utils.CouponType;
 import utils.DateUtils;
@@ -37,8 +40,9 @@ public class ExtractFeatures {
         SQLContext sqlContext = new SQLContext(jsc.sc());
         Map<String, String> options = new HashMap<String, String>();
         options.put("header", "true");
-        options.put("path", Constants.LESS_ONLINE_DATA_PATH);
+        options.put("path", Constants.LESS_OFFLINE_DATA_PATH);
         DataFrame df = sqlContext.load("com.databricks.spark.csv", options);
+
 
         df.registerTempTable("offline_counsume");
         JavaPairRDD<String, Row> rawDataRDD = df.toJavaRDD().mapToPair(new PairFunction<Row, String, Row>() {
@@ -68,16 +72,17 @@ public class ExtractFeatures {
         }).persist(StorageLevel.MEMORY_ONLY());
 
 
-        getUserConsumeFeatures(rawDataRDD,filterCouponRDD,false);
+        getUserConsumeFeatures(rawDataRDD,filterCouponRDD,jsc,false,sqlContext);
 //        getMerchantConsume(rawDataRDD,filterCouponRDD,false);
         jsc.stop();
 
 
     }
 
-    private  static void getUserConsumeFeatures(JavaPairRDD<String, Row> rawDataRDD,
+    private  static void getUserConsumeFeatures(final JavaPairRDD<String, Row> rawDataRDD,
                                                 JavaPairRDD<String, Row> filterCouponRDD,
-                                                Boolean online){
+                                                JavaSparkContext jsc,
+                                                final Boolean online,SQLContext sqlContext){
 
         JavaPairRDD<String, Long> userId2UniqueMerchantCnt = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>,
                 String, String>() {
@@ -162,7 +167,7 @@ public class ExtractFeatures {
             public Tuple2<String, String> call(Tuple2<String, Row> tuple) throws Exception {
                 Row row = tuple._2();
                 String userId = row.getString(0);
-                String cntValue = getValuefeatureMapHelper(row, new UserFeatures(),true);
+                String cntValue = getValuefeatureMapHelper(row, new UserFeatures(),online);
                 return new Tuple2<String, String>(userId, cntValue);
             }
         });
@@ -192,7 +197,7 @@ public class ExtractFeatures {
 
             @Override
             public String call(String v1) throws Exception {
-                return calculateRate(v1, new UserFeatures(),true);
+                return calculateRate(v1, new UserFeatures(),online);
             }
         });
         userId2AggrateRateRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
@@ -207,6 +212,122 @@ public class ExtractFeatures {
 
         System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 
+        Map<String, String> userIdCntMap = userId2AggrateCntRDD.collectAsMap();
+
+        final Broadcast<Map<String, String>> mapBroadcast = jsc.broadcast(userIdCntMap);
+
+
+        // 计算每个用户对每个商户正常消费，不消费，优惠券消费 所占总的各个消费类型的比重
+        /**
+         * userId-merchantId -> row    RDD
+         */
+        JavaPairRDD<String, Row> userMerchantId2RowRDD = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>, String, Row>() {
+
+
+            private static final long serialVersionUID = -6075150712503133622L;
+
+            @Override
+            public Tuple2<String, Row> call(Tuple2<String, Row> tuple) throws Exception {
+                Row row = tuple._2();
+                String userId = row.getString(0);
+                String merchantId = row.getString(1);
+
+                return new Tuple2<String, Row>(userId + "-" + merchantId, row);
+            }
+        });
+
+        /**
+         * userid-merchantid -> diffConsumeCnt RDD
+         *
+         * diffConsumeCnt 正常消费  未使用优惠券   优惠券消费
+         *
+         */
+        JavaPairRDD<String, String> userIdMerchantId2DiffConsumeRDD = userMerchantId2RowRDD.groupByKey().mapToPair(
+                new PairFunction<Tuple2<String, Iterable<Row>>, String, String>() {
+
+
+            private static final long serialVersionUID = 4996121220298113143L;
+
+            @Override
+            public Tuple2<String, String> call(Tuple2<String, Iterable<Row>> tuple) throws Exception {
+
+                Iterator<Row> iterator = tuple._2().iterator();
+                String userId = tuple._1().split("-")[0];
+                Map<String,String> userFeatureMap = mapBroadcast.getValue();
+                String userFeature = userFeatureMap.get(userId);
+
+                long userNormalConsumeCnt =Long.valueOf(StringUtils.getFieldFromConcatString(userFeature, "\\|",
+                        Constants.USER_NORMATL_CONSUME_COUNT));
+
+
+                long userCouponConsumeCnt =Long.valueOf(StringUtils.getFieldFromConcatString(userFeature, "\\|",
+                        Constants.USER_HASCOUPON_USED_COUNT));
+
+                long userNoUsedCouponCnt =Long.valueOf(StringUtils.getFieldFromConcatString(userFeature, "\\|",
+                        Constants.USER_HASCOUPON_NOUSED_COUNT));
+
+                int normalConsumeCnt = 0;
+                int couponConsumeCnt = 0;
+                int noUsedCouponCnt = 0;
+                while (iterator.hasNext()) {
+                    Row row = iterator.next();
+
+                    String couponId = row.getString(2);
+                    String dataPay = row.getString(6);
+
+                    if (StringUtils.isEmpty(couponId) && StringUtils.notEmpty(dataPay)) {
+                        normalConsumeCnt++;
+                    }
+                    if (StringUtils.notEmpty(couponId) && StringUtils.notEmpty(dataPay)) {
+                        couponConsumeCnt++;
+                    }
+                    if (StringUtils.notEmpty(couponId) && StringUtils.isEmpty(dataPay)){
+                        noUsedCouponCnt++;
+                    }
+
+
+                }
+
+                float userMerchantNormalRate = userNormalConsumeCnt > 0 ?
+                               Float.valueOf(normalConsumeCnt)/userNormalConsumeCnt:0.f;
+                float userMerchantCoupUsedRate =userCouponConsumeCnt > 0 ?
+                        Float.valueOf(couponConsumeCnt)/userCouponConsumeCnt:0.f;
+                float userMerchantHasCoupNoUsedRate =userNoUsedCouponCnt > 0 ?
+                        Float.valueOf(noUsedCouponCnt)/userNoUsedCouponCnt : 0.f;
+
+                long perMerConsumCnt = normalConsumeCnt+couponConsumeCnt+noUsedCouponCnt;
+
+                float userPerMerNormalConsumeRate = Float.valueOf(normalConsumeCnt)/perMerConsumCnt;
+                float userPerMerCoupUsedConsumeRate = Float.valueOf(couponConsumeCnt)/perMerConsumCnt;
+                float userPerMerHasCoupNoUsedConsumeRate = Float.valueOf(noUsedCouponCnt)/perMerConsumCnt;
+
+                String normalCnt = Constants.USER_PER_MERCHANT_NORMATL_CONSUME_CNT + "=" + normalConsumeCnt;
+                String couponCnt = Constants.USER_PER_MERCHANT_COUPON_CONSUME_CNT + "=" + couponConsumeCnt;
+                String noUsedCnt = Constants.USER_PER_MERCHANT_HASCOUPON_NOUSED_CONSUME_CNT + "=" + noUsedCouponCnt;
+
+                return new Tuple2<String, String>(tuple._1(), normalCnt + "|" + couponCnt + "|" + noUsedCnt + "|"
+                        + Constants.USER_PER_MER_NORM_CONSUME_RATE + "=" + userPerMerNormalConsumeRate + "|"
+                        + Constants.USER_PER_MER_COUPON_CONSUME_RATE + "=" + userPerMerCoupUsedConsumeRate + "|"
+                        + Constants.USER_PER_MER_COUPON_NOUSED_CONSUME_RATE + "=" + userPerMerHasCoupNoUsedConsumeRate+ "|"
+                        +Constants.USER_MERCHANT_NORMATL_CONSUME_RATE + "=" +userMerchantNormalRate + "|"
+                        + Constants.USER_MERCHANT_COUPON_CONSUME_RATE + "=" + userMerchantCoupUsedRate + "|"
+                        + Constants.USER_MERCHANT_NOUSE_COUP_CONSUME_RATE + "=" + userMerchantHasCoupNoUsedRate
+
+                );
+            }
+        });
+
+        
+        saveUserMerchantFeatures(sqlContext,userIdMerchantId2DiffConsumeRDD);
+
+//        userIdMerchantId2DiffConsumeRDD.sortByKey().foreach(new VoidFunction<Tuple2<String, String>>() {
+//            @Override
+//            public void call(Tuple2<String, String> tuple) throws Exception {
+//
+//                System.out.println(tuple._1() + " : " + tuple._2());
+//            }
+//        });
+
     }
 
     /**
@@ -216,7 +337,7 @@ public class ExtractFeatures {
      */
     private  static  void getMerchantConsume(final JavaPairRDD<String, Row> rawDataRDD,
                                              JavaPairRDD<String, Row> filterCouponRDD,
-                                             Boolean online){
+                                             final Boolean online,SQLContext sqlContext){
 
         /**
          * 商户消费的不同用户量
@@ -310,7 +431,7 @@ public class ExtractFeatures {
                 //商户id
                 String merchantId = row.getString(1);
 
-                String cntValue = getValuefeatureMapHelper(row,new MerchantFeatures(),false);
+                String cntValue = getValuefeatureMapHelper(row,new MerchantFeatures(),online);
 
                 return new Tuple2<String, String>(merchantId, cntValue);
             }
@@ -360,7 +481,6 @@ public class ExtractFeatures {
 
 
     private  static  String calculateRate(String v1,CouponFeatures feature,boolean isOnline){
-
 
 
         // 未使用优惠券
@@ -629,6 +749,64 @@ public class ExtractFeatures {
 
     }
 
+    private static void saveUserMerchantFeatures(SQLContext sqlContext,JavaPairRDD<String,String> rdd){
+
+        JavaRDD<UserMerchantFeature> userMerchantRDD = rdd.map(new Function<Tuple2<String, String>, UserMerchantFeature>() {
+            private static final long serialVersionUID = 622939869243808509L;
+
+            @Override
+            public UserMerchantFeature call(Tuple2<String, String> v1) throws Exception {
+
+                UserMerchantFeature userMerchantFeature = new UserMerchantFeature();
+                String[] userMer = v1._1().split("-");
+                String[] infos = v1._2().split("\\|");
+
+                userMerchantFeature.setUserId(userMer[0]);
+                userMerchantFeature.setMerchantId(userMer[1]);
+                userMerchantFeature.setUserPerMerchantNormalConsumeCnt(StringUtils.getFieldFromConcatString(v1._2(),
+                        "\\|", Constants.USER_PER_MERCHANT_NORMATL_CONSUME_CNT));
+
+
+                userMerchantFeature.setUserPerMerchantCouponConsumeCnt(StringUtils.getFieldFromConcatString(v1._2(),
+                        "\\|", Constants.USER_PER_MERCHANT_COUPON_CONSUME_CNT));
+
+                userMerchantFeature.setUserPerMerchantHasCouponNoUsedConsumeCnt(StringUtils.getFieldFromConcatString(v1._2(),
+                        "\\|", Constants.USER_PER_MERCHANT_HASCOUPON_NOUSED_CONSUME_CNT));
+                userMerchantFeature.setUserPerMerNormConsumeRate(StringUtils.getFieldFromConcatString(v1._2(),
+                        "\\|", Constants.USER_PER_MER_NORM_CONSUME_RATE));
+
+                userMerchantFeature.setUserPerMerCoupConsumeRate(StringUtils.getFieldFromConcatString(v1._2(),
+                        "\\|", Constants.USER_PER_MER_COUPON_CONSUME_RATE));
+
+                userMerchantFeature.setUserPerMerCoupNoUsedConsumeRate(StringUtils.getFieldFromConcatString(v1._2(),
+                        "\\|", Constants.USER_PER_MER_COUPON_NOUSED_CONSUME_RATE));
+
+                userMerchantFeature.setUserMerchantNormalConsumeRate(StringUtils.getFieldFromConcatString(v1._2(),
+                        "\\|", Constants.USER_MERCHANT_NORMATL_CONSUME_RATE));
+                userMerchantFeature.setUserMerchantCouponConsumeRate(StringUtils.getFieldFromConcatString(v1._2(),
+                        "\\|", Constants.USER_MERCHANT_COUPON_CONSUME_RATE));
+
+
+                userMerchantFeature.setUserMerchantHasCoupNoUsedRate(StringUtils.getFieldFromConcatString(v1._2(),
+                        "\\|", Constants.USER_MERCHANT_NOUSE_COUP_CONSUME_RATE));
+                return userMerchantFeature;
+            }
+        });
+
+        userMerchantRDD.foreach(new VoidFunction<UserMerchantFeature>() {
+            @Override
+            public void call(UserMerchantFeature userMerchantFeature) throws Exception {
+                System.out.println(userMerchantFeature.getUserId());
+            }
+        });
+
+//        DataFrame dataFrame = sqlContext.createDataFrame(userMerchantRDD, UserMerchantFeature.class);
+//        dataFrame.select("userId").save("userMerchant.csv", "com.databricks.spark.csv");
+
+//        dataFrame.save("userMerchant.csv",
+//                "com.databricks.spark.csv");
+
+    }
 
 
 
