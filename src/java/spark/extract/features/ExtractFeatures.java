@@ -34,7 +34,8 @@ public class ExtractFeatures {
 
         SparkConf conf = new SparkConf()
                 .setAppName("O2OCoupon")
-                .setMaster("local");
+                .setMaster("local[2]");
+
         Logger.getLogger("org").setLevel(Level.ERROR);
         JavaSparkContext jsc = new JavaSparkContext(conf);
         SQLContext sqlContext = new SQLContext(jsc.sc());
@@ -793,18 +794,19 @@ public class ExtractFeatures {
             }
         });
 
-        userMerchantRDD.foreach(new VoidFunction<UserMerchantFeature>() {
-            @Override
-            public void call(UserMerchantFeature userMerchantFeature) throws Exception {
-                System.out.println(userMerchantFeature.getUserId());
-            }
-        });
+//        userMerchantRDD.foreach(new VoidFunction<UserMerchantFeature>() {
+//            @Override
+//            public void call(UserMerchantFeature userMerchantFeature) throws Exception {
+//                System.out.println(userMerchantFeature.getUserId());
+//            }
+//        });
 
-//        DataFrame dataFrame = sqlContext.createDataFrame(userMerchantRDD, UserMerchantFeature.class);
-//        dataFrame.select("userId").save("userMerchant.csv", "com.databricks.spark.csv");
+        DataFrame dataFrame = sqlContext.createDataFrame(userMerchantRDD, UserMerchantFeature.class);
 
-//        dataFrame.save("userMerchant.csv",
-//                "com.databricks.spark.csv");
+        Map<String, String> options = new HashMap<String, String>();
+        options.put("header", "true");
+        dataFrame.write().format("com.databricks.spark.csv").save("Resource/userMerchant");
+
 
     }
 

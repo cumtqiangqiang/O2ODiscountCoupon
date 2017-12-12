@@ -1,10 +1,15 @@
 package spark.extract.features.domain;
 
+import java.io.Serializable;
+
 /**
  * Created by UC227911 on 12/12/2017.
  */
-public class UserMerchantFeature {
-//|UserPerMerCoupNoUsedConsumeRate=1.0|UserMerchantNormalConsumeRate=0.0|UserMerchantCouponConsumeRate=0.0|UserMerchantHasCoupNoUsedRate=0.5
+public class UserMerchantFeature  implements Serializable{
+    private static final long serialVersionUID = 7474184074612883165L;
+
+
+    //|UserPerMerCoupNoUsedConsumeRate=1.0|UserMerchantNormalConsumeRate=0.0|UserMerchantCouponConsumeRate=0.0|UserMerchantHasCoupNoUsedRate=0.5
 
     private String userId;
     private String merchantId;
