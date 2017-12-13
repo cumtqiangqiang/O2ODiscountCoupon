@@ -133,6 +133,16 @@ public class UserFeatures  extends   CouponFeatures {
         return Constants.USER_DISCOUNT_FIXED_RATE;
     }
 
+    @Override
+    String getDistanceAggre() {
+        return Constants.USER_AGGRE_DISTANCE;
+    }
+
+    @Override
+    String getDistanceAverage() {
+        return Constants.USER_AVERAGE_DISTANCE;
+    }
+
     String getUserAction(int actionType){
 
         String value = "";

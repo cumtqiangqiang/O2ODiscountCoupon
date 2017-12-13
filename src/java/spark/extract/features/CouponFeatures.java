@@ -37,6 +37,7 @@ abstract class CouponFeatures {
     abstract String getCoupon500MoreRate();
     abstract String getCouponDirectRate();
     abstract String getCouponFixedRate();
-
+    abstract String getDistanceAggre();
+    abstract String getDistanceAverage();
 
 }

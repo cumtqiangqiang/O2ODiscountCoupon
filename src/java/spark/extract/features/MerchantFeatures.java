@@ -133,4 +133,14 @@ public class MerchantFeatures extends CouponFeatures {
     String getCouponFixedRate() {
         return Constants.MERCHANT_DISCOUNT_FIXED_RATE;
     }
+
+    @Override
+    String getDistanceAggre() {
+        return Constants.MERCHANT_AGGRE_DISTANCE;
+    }
+
+    @Override
+    String getDistanceAverage() {
+        return Constants.USER_AVERAGE_DISTANCE;
+    }
 }

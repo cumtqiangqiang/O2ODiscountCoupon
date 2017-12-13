@@ -54,7 +54,6 @@ public class StringUtils {
         try {
             String[] fields = str.split(delimiter);
             for(String concatField : fields) {
-                // searchKeywords=|clickCategoryIds=1,2,3
                 if(concatField.split("=").length == 2) {
                     String fieldName = concatField.split("=")[0];
                     String fieldValue = concatField.split("=")[1];
@@ -66,7 +65,7 @@ public class StringUtils {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null;
+        return "-1";
     }
 
 
@@ -112,13 +111,22 @@ public class StringUtils {
             String oldV1 = getFieldFromConcatString(v1,"\\|",kv[0]);
             String oldV2 = getFieldFromConcatString(v2,"\\|",kv[0]);
             if (kv[0].equals(Constants.DISCOUNT_RATE)){
+
                 float rate = Float.valueOf(oldV1) + Float.valueOf(oldV2);
                 results = setFieldInConcatString(results,"\\|",kv[0],String.valueOf(rate));
 
 
-
             }else {
-                long newV = Long.valueOf(oldV1) + Long.valueOf(oldV2);
+                long newV = -1L;
+                if (Long.valueOf(oldV1) != -1 &&  Long.valueOf(oldV2) != -1){
+                    newV = Long.valueOf(oldV1) + Long.valueOf(oldV2);
+                }else if (Long.valueOf(oldV1) != -1 || Long.valueOf(oldV2) != -1){
+
+                     newV = Long.valueOf(oldV2) == -1 ? Long.valueOf(oldV1) : Long.valueOf(oldV2);
+
+                }
+
+
                 String newVStr = String.valueOf(newV);
                 results = setFieldInConcatString(results, "\\|", kv[0], newVStr);
             }
