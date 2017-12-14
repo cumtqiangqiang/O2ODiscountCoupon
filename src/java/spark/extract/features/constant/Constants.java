@@ -5,13 +5,23 @@ package spark.extract.features.constant;
  */
 public interface Constants {
     /**
-     * 文件路径
+     * 输入文件路径
      */
     String TRAIN_OFFLINE_DATA_PATH = "Resource/tb01ccf_offline_stage1_train.csv";
     String TRAIN_ONLINE_DATA_PATH = "Resource/tb02ccf_online_stage1_train.csv";
     String TEST_OFFLINE_DATA_PATH = "Resource/tb03ccf_offline_stage1_test_revised.csv";
     String LESS_OFFLINE_DATA_PATH = "TestResource/test_offline_stage1_train.csv";
     String LESS_ONLINE_DATA_PATH = "TestResource/onlineTest.csv";
+
+    /**
+     * 输出文件路径
+     */
+    // 训练线下数据
+    String TRAIN_OFF_USER_FEATURE_PATH = "Resource/features/offline/trainUserFeature";
+    String TRAIN_OFF_MERCHANT_FEATURE_PATH = "Resource/features/offline/trainMerFeature";
+    String TRAIN_OFF_USER_MER_FEATURE_PATH = "Resource/features/offline/trainUserMerFeature";
+
+
 
     /**
      * 用户相关特征.
@@ -273,6 +283,11 @@ public interface Constants {
     int USER_ACTION_BUY = 1;
     int USER_ACTION_GET_COUPON = 2;
 
-
+    /**
+     * 输出的特征类型.
+     */
+    int SAVE_USER_FEATURE_TYPE = 0;
+    int SAVE_MERCHANT_FEATURE_TYPE = 1;
+    int SAVE_USER_MER_FEATURE_TYPE = 2;
 
 }
