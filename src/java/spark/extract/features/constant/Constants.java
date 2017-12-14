@@ -32,17 +32,17 @@ public interface Constants {
     // 有优惠券但是没有使用
     String USER_HASCOUPON_NOUSED_COUNT = "UserHasCouponNoUsedCnt";
     // 0~50 discount 满50减
-    String  USER_DISCOUNT_50_COUNT = "UserDiscount50RateCnt";
+    String  USER_DISCOUNT_50_COUNT = "UserDiscount50Cnt";
     // 50<discount<200
-    String  USER_DISCOUNT_200_COUNT = "UserDiscount200RateCnt";
+    String  USER_DISCOUNT_200_COUNT = "UserDiscount200Cnt";
     // 200<discount<500
-    String  USER_DISCOUNT_500_COUNT = "UserDiscount500RateCnt";
+    String  USER_DISCOUNT_500_COUNT = "UserDiscount500Cnt";
     // 500<discount
-    String  USER_DISCOUNT_MORE_COUNT = "UserDiscountMore500RateCnt";
+    String  USER_DISCOUNT_MORE_COUNT = "UserDiscountMore500Cnt";
     // 限时优惠活动.
-    String  USER_DISCOUNT_FIXED_COUNT = "UserDiscountFixedRateCnt";
+    String  USER_DISCOUNT_FIXED_COUNT = "UserDiscountFixedCnt";
     // 直接以折扣的形式存在  不是满减
-    String  USER_DISCOUNT_DIRECT_COUNT = "UserDirectDiscountRateCnt";
+    String  USER_DISCOUNT_DIRECT_COUNT = "UserDirectDiscountCnt";
     // 用户点击数
     String USER_ACTION_0_COUNT = "UserActionClickCnt";
     // 用户购买数
@@ -66,8 +66,6 @@ public interface Constants {
     String USER_HAS_COUPON_NOUSE_RATE = "UserHasCouponNoUseRate";
     // 用户使用优惠券率
     String USER_HAS_COUPON_USE_RATE = "UserHasCouponUseRate";
-    // 在所有优惠消费中 直接使用折扣消费率
-    String USER_DIRECT_DISCOUNT_RATE = "UserDirectDiscountRate";
     // 0~50 discount 满50减
     String USER_DISCOUNT_50_RATE = "UserDiscount50Rate";
     // 50<discount<200
@@ -94,7 +92,7 @@ public interface Constants {
     // 最小距离
     String USER_MIN_DISTANCE = "UserMinDistance";
 
-    //优惠券的折扣
+    //全部优惠券的折扣（为了计算加的，不计入特征）
     String DISCOUNT_RATE = "DiscountRate";
     // 用户获得优惠券的平均折扣率
     String AVERAGE_DISCOUNT_RATE = "AverageDiscountRate";
@@ -118,7 +116,6 @@ public interface Constants {
             + USER_NORMAL_CONSUME_RATE + "=" +"0" + "|"
             + USER_HAS_COUPON_NOUSE_RATE + "=" +"0" + "|"
             + USER_HAS_COUPON_USE_RATE + "=" +"0" + "|"
-            + USER_DIRECT_DISCOUNT_RATE  + "=" +"0" + "|"
             + AVERAGE_DISCOUNT_RATE + "=" +"0" + "|"
             + USER_DISCOUNT_50_RATE +"=" +"0" +"|"
             + USER_DISCOUNT_200_RATE +"=" +"0" +"|"
@@ -137,14 +134,19 @@ public interface Constants {
     // 商家数量
     String MERCHANT_COUNT = "MerchantCnt";
 
+    //用户消费优惠券的商家数量
+    String MERCHANT_UNIQUE_USER_COUNT = "MerUniqueCousumeUserCnt";
+    // 用户使用不同优惠券数量
+    String MERCHANT_UNIQUE_COUPON_COUNT = "MerUniqueCouponCnt";
     // 计算商家的全部距离和，为了计算平均值
-    String MERCHANT_AGGRE_DISTANCE = "UserMerchantDistance";
+    String MERCHANT_AGGRE_DISTANCE = "MerchantMerchantDistance";
     // 用户距离商场的平均距离
     String MERCHANT_AVERAGE_DISTANCE = "MerchantAverageDistance";
     //最大距离
     String MERCHANT_MAX_DISTANCE = "MerchantMaxDistance";
     // 最小距离
     String MERCHANT_MIN_DISTANCE = "MerchantMinDistance";
+
 
     // 正常消费
     String MERCHANT_NORMAL_CONSUME_COUNT = "MerchantNormalConsumeCnt";
@@ -210,6 +212,7 @@ public interface Constants {
                                             + MERCHANT_DISCOUNT_LESS15_COUNT + "=" + "0";
 
     String MERCHANT_DISCOUNT_INITIAL_RATE =  MERCHANT_COUPON_CHARGEOFF_RATE +"=" +"0" +"|"
+                                            + MERCHANT_AVERAGE_DISTANCE +"=" +"0" +"|"
                                             + MERCHANT_NORMAL_CONSUME_RATE +"=" +"0" +"|"
                                             + MERCHANT_HASCOUPON_NOUSE_CONSUME_RATE +"=" +"0" +"|"
                                             + MERCHANT_HASCOUPON_USED_CONSUME_RATE +"=" +"0" +"|"

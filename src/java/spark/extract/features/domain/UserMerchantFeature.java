@@ -5,6 +5,7 @@ import java.io.Serializable;
 /**
  * Created by UC227911 on 12/12/2017.
  */
+@SuppressWarnings("unused")
 public class UserMerchantFeature  implements Serializable{
     private static final long serialVersionUID = 7474184074612883165L;
 
@@ -13,15 +14,19 @@ public class UserMerchantFeature  implements Serializable{
 
     private String userId;
     private String merchantId;
-    private String UserPerMerchantNormalConsumeCnt;
-    private String UserPerMerchantCouponConsumeCnt;
-    private String UserPerMerchantHasCouponNoUsedConsumeCnt;
-    private String UserPerMerNormConsumeRate;
-    private String UserPerMerCoupConsumeRate;
-    private String UserPerMerCoupNoUsedConsumeRate;
-    private String UserMerchantNormalConsumeRate;
-    private String UserMerchantCouponConsumeRate;
-    private String UserMerchantHasCoupNoUsedRate;
+    private String userPerMerchantNormalConsumeCnt;
+    private String userPerMerchantCouponConsumeCnt;
+    private String userPerMerchantHasCouponNoUsedConsumeCnt;
+    private String userPerMerNormConsumeRate;
+    private String userPerMerCoupConsumeRate;
+    private String userPerMerCoupNoUsedConsumeRate;
+    private String userMerchantNormalConsumeRate;
+    private String userMerchantCouponConsumeRate;
+    private String userMerchantHasCoupNoUsedRate;
+
+    public static long getSerialVersionUID() {
+        return serialVersionUID;
+    }
 
     public String getUserId() {
         return userId;
@@ -40,75 +45,75 @@ public class UserMerchantFeature  implements Serializable{
     }
 
     public String getUserPerMerchantNormalConsumeCnt() {
-        return UserPerMerchantNormalConsumeCnt;
+        return userPerMerchantNormalConsumeCnt;
     }
 
     public void setUserPerMerchantNormalConsumeCnt(String userPerMerchantNormalConsumeCnt) {
-        UserPerMerchantNormalConsumeCnt = userPerMerchantNormalConsumeCnt;
+        this.userPerMerchantNormalConsumeCnt = userPerMerchantNormalConsumeCnt;
     }
 
     public String getUserPerMerchantCouponConsumeCnt() {
-        return UserPerMerchantCouponConsumeCnt;
+        return userPerMerchantCouponConsumeCnt;
     }
 
     public void setUserPerMerchantCouponConsumeCnt(String userPerMerchantCouponConsumeCnt) {
-        UserPerMerchantCouponConsumeCnt = userPerMerchantCouponConsumeCnt;
+        this.userPerMerchantCouponConsumeCnt = userPerMerchantCouponConsumeCnt;
     }
 
     public String getUserPerMerchantHasCouponNoUsedConsumeCnt() {
-        return UserPerMerchantHasCouponNoUsedConsumeCnt;
+        return userPerMerchantHasCouponNoUsedConsumeCnt;
     }
 
     public void setUserPerMerchantHasCouponNoUsedConsumeCnt(String userPerMerchantHasCouponNoUsedConsumeCnt) {
-        UserPerMerchantHasCouponNoUsedConsumeCnt = userPerMerchantHasCouponNoUsedConsumeCnt;
+        this.userPerMerchantHasCouponNoUsedConsumeCnt = userPerMerchantHasCouponNoUsedConsumeCnt;
     }
 
     public String getUserPerMerNormConsumeRate() {
-        return UserPerMerNormConsumeRate;
+        return userPerMerNormConsumeRate;
     }
 
     public void setUserPerMerNormConsumeRate(String userPerMerNormConsumeRate) {
-        UserPerMerNormConsumeRate = userPerMerNormConsumeRate;
+        this.userPerMerNormConsumeRate = userPerMerNormConsumeRate;
     }
 
     public String getUserPerMerCoupConsumeRate() {
-        return UserPerMerCoupConsumeRate;
+        return userPerMerCoupConsumeRate;
     }
 
     public void setUserPerMerCoupConsumeRate(String userPerMerCoupConsumeRate) {
-        UserPerMerCoupConsumeRate = userPerMerCoupConsumeRate;
+        this.userPerMerCoupConsumeRate = userPerMerCoupConsumeRate;
     }
 
     public String getUserPerMerCoupNoUsedConsumeRate() {
-        return UserPerMerCoupNoUsedConsumeRate;
+        return userPerMerCoupNoUsedConsumeRate;
     }
 
     public void setUserPerMerCoupNoUsedConsumeRate(String userPerMerCoupNoUsedConsumeRate) {
-        UserPerMerCoupNoUsedConsumeRate = userPerMerCoupNoUsedConsumeRate;
+        this.userPerMerCoupNoUsedConsumeRate = userPerMerCoupNoUsedConsumeRate;
     }
 
     public String getUserMerchantNormalConsumeRate() {
-        return UserMerchantNormalConsumeRate;
+        return userMerchantNormalConsumeRate;
     }
 
     public void setUserMerchantNormalConsumeRate(String userMerchantNormalConsumeRate) {
-        UserMerchantNormalConsumeRate = userMerchantNormalConsumeRate;
+        this.userMerchantNormalConsumeRate = userMerchantNormalConsumeRate;
     }
 
     public String getUserMerchantCouponConsumeRate() {
-        return UserMerchantCouponConsumeRate;
+        return userMerchantCouponConsumeRate;
     }
 
     public void setUserMerchantCouponConsumeRate(String userMerchantCouponConsumeRate) {
-        UserMerchantCouponConsumeRate = userMerchantCouponConsumeRate;
+        this.userMerchantCouponConsumeRate = userMerchantCouponConsumeRate;
     }
 
     public String getUserMerchantHasCoupNoUsedRate() {
-        return UserMerchantHasCoupNoUsedRate;
+        return userMerchantHasCoupNoUsedRate;
     }
 
     public void setUserMerchantHasCoupNoUsedRate(String userMerchantHasCoupNoUsedRate) {
-        UserMerchantHasCoupNoUsedRate = userMerchantHasCoupNoUsedRate;
+        this.userMerchantHasCoupNoUsedRate = userMerchantHasCoupNoUsedRate;
     }
 
 

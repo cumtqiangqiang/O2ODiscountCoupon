@@ -141,6 +141,6 @@ public class MerchantFeatures extends CouponFeatures {
 
     @Override
     String getDistanceAverage() {
-        return Constants.USER_AVERAGE_DISTANCE;
+        return Constants.MERCHANT_AVERAGE_DISTANCE;
     }
 }

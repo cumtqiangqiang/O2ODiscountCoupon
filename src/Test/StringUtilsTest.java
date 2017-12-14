@@ -34,8 +34,8 @@ public class StringUtilsTest {
 
 
         long a = 5L;
-        long b = 7L;
-        System.out.println(Float.valueOf(a)/b);
+        float b = 7.f;
+        System.out.println(a+b);
 
 
     }
