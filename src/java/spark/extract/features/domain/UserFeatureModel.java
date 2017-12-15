@@ -14,8 +14,6 @@ public class UserFeatureModel implements Serializable {
     private String userUniqueCousumeMerchantCnt;
     private String userUniqueCouponCnt;
     private String uerConsumeCnt;
-//    private String userAggreDistance;
-//    private String discountRate;
     private String userNormalConsumeCnt;
     private String userHasCouponUsedCnt;
     private String userHasCouponNoUsedCnt;

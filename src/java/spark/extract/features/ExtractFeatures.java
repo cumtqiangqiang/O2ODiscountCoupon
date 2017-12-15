@@ -31,7 +31,7 @@ public class ExtractFeatures {
 
         SparkConf conf = new SparkConf()
                 .setAppName("O2OCoupon")
-                .setMaster("local[2]");
+                .setMaster("local");
 
         Logger.getLogger("org").setLevel(Level.ERROR);
         JavaSparkContext jsc = new JavaSparkContext(conf);
@@ -78,7 +78,8 @@ public class ExtractFeatures {
     private  static void getUserConsumeFeatures(final JavaPairRDD<String, Row> rawDataRDD,
                                                 JavaPairRDD<String, Row> filterCouponRDD,
                                                 JavaSparkContext jsc,
-                                                final Boolean online,SQLContext sqlContext){
+                                                final Boolean online,SQLContext sqlContext,
+                                                String path,int featureType){
 
         /**
          * userid-uniqueMerchant > cnt
@@ -276,6 +277,7 @@ public class ExtractFeatures {
         });
 
 
+
         OutputManager.saveFeatures(sqlContext,userId2AggrateRateRDD,Constants.SAVE_USER_FEATURE_TYPE);
 
         System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
@@ -406,7 +408,8 @@ public class ExtractFeatures {
     private  static  void getMerchantConsume(final JavaPairRDD<String, Row> rawDataRDD,
                                              JavaPairRDD<String, Row> filterCouponRDD,
                                              JavaSparkContext jsc,
-                                             final Boolean online,SQLContext sqlContext){
+                                             final Boolean online,SQLContext sqlContext,
+                                             String path){
 
         /**
          * 商户消费的不同用户量
