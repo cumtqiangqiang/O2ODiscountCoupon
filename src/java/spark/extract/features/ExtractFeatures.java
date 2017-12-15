@@ -38,11 +38,14 @@ public class ExtractFeatures {
         SQLContext sqlContext = new SQLContext(jsc.sc());
         Map<String, String> options = new HashMap<String, String>();
         options.put("header", "true");
-        options.put("path", Constants.LESS_OFFLINE_DATA_PATH);
-        DataFrame df = sqlContext.load("com.databricks.spark.csv", options);
+        options.put("path", Constants.TRAIN_OFFLINE_DATA_PATH);
+        DataFrame offlineDf = sqlContext.load("com.databricks.spark.csv", options);
 
-        df.registerTempTable("offline_counsume");
-        JavaPairRDD<String, Row> rawDataRDD = df.toJavaRDD().mapToPair(new PairFunction<Row, String, Row>() {
+        offlineDf.registerTempTable("offline_counsume");
+        JavaPairRDD<String, Row> offlineRawDataRDD = offlineDf.toJavaRDD().mapToPair(new PairFunction<Row, String,
+                Row>() {
+
+            private static final long serialVersionUID = 4892152298698385223L;
 
             @Override
             public Tuple2<String, Row> call(Row row) throws Exception {
@@ -51,8 +54,9 @@ public class ExtractFeatures {
         }).persist(StorageLevel.MEMORY_AND_DISK());
 
 
-         // 过滤掉没有优惠券的
-        JavaPairRDD<String, Row> filterCouponRDD = rawDataRDD.filter(new Function<Tuple2<String, Row>, Boolean>() {
+        // 过滤掉没有优惠券的
+        JavaPairRDD<String, Row> offlinefilterCouponRDD = offlineRawDataRDD.filter(new Function<Tuple2<String, Row>,
+                Boolean>() {
             private static final long serialVersionUID = -6164994096654132755L;
 
             @Override
@@ -60,32 +64,50 @@ public class ExtractFeatures {
                 Row row = v1._2();
                 String couponId = row.getString(2);
 
-                 return StringUtils.notEmpty(couponId);
+                return StringUtils.notEmpty(couponId);
             }
         }).persist(StorageLevel.MEMORY_AND_DISK());
 
 
-        String[] offlinePath = {Constants.LESS_OFFLINE_USER_DATA_PATH,Constants.LESS_OFFLINE_MER_DATA_PATH,
-                            Constants.LESS_OFFLINE_USER_MER_DATA_PATH};
+        options.put("path", Constants.TRAIN_ONLINE_DATA_PATH);
 
-        String[] onlinePath = {Constants.LESS_ONLINE_USER_DATA_PATH,Constants.LESS_ONLINE_MER_DATA_PATH,
-                Constants.LESS_ONLINE_USER_MER_DATA_PATH};
+        DataFrame onlineDf = sqlContext.load("com.databricks.spark.csv", options);
 
-        for (int i = 0; i < offlinePath.length; i++) {
+        offlineDf.registerTempTable("offline_counsume");
+        JavaPairRDD<String, Row> onlineRawDataRDD = onlineDf.toJavaRDD().mapToPair(new PairFunction<Row, String,
+                Row>() {
 
-            getUserConsumeFeatures(rawDataRDD,filterCouponRDD,jsc,false,sqlContext,
-                    offlinePath[i],i);
+            private static final long serialVersionUID = -8835903960787653841L;
 
-            getUserConsumeFeatures(rawDataRDD,filterCouponRDD,jsc,true,sqlContext,
-                    onlinePath[i],i);
+            @Override
+            public Tuple2<String, Row> call(Row row) throws Exception {
+                return new Tuple2<String, Row>(row.getString(0), row);
+            }
+        }).persist(StorageLevel.MEMORY_AND_DISK());
 
-            getMerchantConsume(rawDataRDD,filterCouponRDD,jsc,false,sqlContext,
-                    offlinePath[i],i);
 
-            getMerchantConsume(rawDataRDD,filterCouponRDD,jsc,false,sqlContext,
-                    onlinePath[i],i);
-        }
+        // 过滤掉没有优惠券的
+        JavaPairRDD<String, Row> onlinefilterCouponRDD = onlineRawDataRDD.filter(new Function<Tuple2<String, Row>,
+                Boolean>() {
+            private static final long serialVersionUID = -6164994096654132755L;
 
+            @Override
+            public Boolean call(Tuple2<String, Row> v1) throws Exception {
+                Row row = v1._2();
+                String couponId = row.getString(2);
+
+                return StringUtils.notEmpty(couponId);
+            }
+        }).persist(StorageLevel.MEMORY_AND_DISK());
+
+
+//        getUserConsumeFeatures(offlineRawDataRDD, offlinefilterCouponRDD, jsc, false, sqlContext);
+
+        getUserConsumeFeatures(onlineRawDataRDD, onlinefilterCouponRDD, jsc, true, sqlContext);
+
+        getMerchantConsume(offlineRawDataRDD, offlinefilterCouponRDD, jsc, false, sqlContext);
+
+        getMerchantConsume(onlineRawDataRDD, onlinefilterCouponRDD, jsc, true, sqlContext);
 
 
         jsc.stop();
@@ -93,11 +115,10 @@ public class ExtractFeatures {
 
     }
 
-    private  static void getUserConsumeFeatures(final JavaPairRDD<String, Row> rawDataRDD,
-                                                JavaPairRDD<String, Row> filterCouponRDD,
-                                                JavaSparkContext jsc,
-                                                final Boolean online,SQLContext sqlContext,
-                                                String path,int featureType){
+    private static void getUserConsumeFeatures(final JavaPairRDD<String, Row> rawDataRDD,
+                                               JavaPairRDD<String, Row> filterCouponRDD,
+                                               JavaSparkContext jsc,
+                                               final Boolean online, SQLContext sqlContext) {
 
         /**
          * userid-uniqueMerchant > cnt
@@ -171,7 +192,7 @@ public class ExtractFeatures {
         });
 
 
-        JavaPairRDD<String, Tuple2<Long, Optional<Long>>> userIdUniqueMerCoupRDD =userId2UniqueMerchantCnt
+        JavaPairRDD<String, Tuple2<Long, Optional<Long>>> userIdUniqueMerCoupRDD = userId2UniqueMerchantCnt
                 .leftOuterJoin(userid2UniqueCouponIdRDD);
 
         JavaPairRDD<String, String> userUniqueMerCoupCntRDD = userIdUniqueMerCoupRDD.mapValues(new Function<Tuple2<Long,
@@ -191,6 +212,11 @@ public class ExtractFeatures {
             }
         });
 
+        /**
+         * ==================================================================================
+         *                              action
+         * ==================================================================================
+         */
         Map<String, String> userid2UniqueMerCoupMap = userUniqueMerCoupCntRDD.collectAsMap();
 
         /**
@@ -220,7 +246,7 @@ public class ExtractFeatures {
             public Tuple2<String, String> call(Tuple2<String, Row> tuple) throws Exception {
                 Row row = tuple._2();
                 String userId = row.getString(0);
-                String cntValue = getValuefeatureMapHelper(row, new UserFeatures(),online);
+                String cntValue = getValuefeatureMapHelper(row, new UserFeatures(), online);
                 return new Tuple2<String, String>(userId, cntValue);
             }
         });
@@ -248,7 +274,7 @@ public class ExtractFeatures {
         /**
          * userid -> 各种rate RDD   和cnt RDD 结合.
          */
-        JavaPairRDD<String, String> userId2AggrateRateRDD  = userId2AggrateCntRDD.mapToPair(new PairFunction<Tuple2<String,String>, String, String>() {
+        JavaPairRDD<String, String> userId2AggrateRateRDD = userId2AggrateCntRDD.mapToPair(new PairFunction<Tuple2<String, String>, String, String>() {
             private static final long serialVersionUID = 6763945829437482826L;
 
             @Override
@@ -256,16 +282,16 @@ public class ExtractFeatures {
 
                 String userId = tuple._1();
                 String v1 = tuple._2();
-                String rateV = calculateRate(v1, new UserFeatures(),online);
+                String rateV = calculateRate(v1, new UserFeatures(), online);
 
 
                 Map<String, String> map = userid2UniqueMerCoupBroadcast.getValue();
 
                 String mapV = map.get(userId);
-                String userCntAndRateV =mapV + "|" + v1 + "|" + rateV;
+                String userCntAndRateV = mapV + "|" + v1 + "|" + rateV;
 
 
-                return new Tuple2<String, String>(userId,userCntAndRateV);
+                return new Tuple2<String, String>(userId, userCntAndRateV);
 
             }
         });
@@ -285,18 +311,22 @@ public class ExtractFeatures {
 //                return userCntAndRateV;
 //            }
 //        });
-        userId2AggrateRateRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
-            private static final long serialVersionUID = -2084825518255726690L;
+//        userId2AggrateRateRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
+//            private static final long serialVersionUID = -2084825518255726690L;
+//
+//            @Override
+//            public void call(Tuple2<String, String> tuple) throws Exception {
+//                System.out.println("userid:" + tuple._1() + " rateValue:" + tuple._2());
+//            }
+//        });
 
-            @Override
-            public void call(Tuple2<String, String> tuple) throws Exception {
-                System.out.println("userid:" + tuple._1() + " rateValue:" + tuple._2());
-            }
-        });
+        String userPath = Constants.TRAIN_OFF_USER_FEATURE_PATH;
+        if (online) {
+            userPath = Constants.TRAIN_ONLINE_USER_FEATURE_PATH;
+        }
+        OutputManager.saveFeatures(sqlContext, userId2AggrateRateRDD, userPath,
+                Constants.SAVE_USER_FEATURE_TYPE);
 
-
-
-        OutputManager.saveFeatures(sqlContext,userId2AggrateRateRDD,path,featureType);
 
         System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 
@@ -334,79 +364,84 @@ public class ExtractFeatures {
                 new PairFunction<Tuple2<String, Iterable<Row>>, String, String>() {
 
 
-            private static final long serialVersionUID = 4996121220298113143L;
+                    private static final long serialVersionUID = 4996121220298113143L;
 
-            @Override
-            public Tuple2<String, String> call(Tuple2<String, Iterable<Row>> tuple) throws Exception {
+                    @Override
+                    public Tuple2<String, String> call(Tuple2<String, Iterable<Row>> tuple) throws Exception {
 
-                Iterator<Row> iterator = tuple._2().iterator();
-                String userId = tuple._1().split("-")[0];
-                Map<String,String> userFeatureMap = mapBroadcast.getValue();
-                String userFeature = userFeatureMap.get(userId);
+                        Iterator<Row> iterator = tuple._2().iterator();
+                        String userId = tuple._1().split("-")[0];
+                        Map<String, String> userFeatureMap = mapBroadcast.getValue();
+                        String userFeature = userFeatureMap.get(userId);
 
-                float userNormalConsumeCnt =Float.valueOf(StringUtils.getFieldFromConcatString(userFeature, "\\|",
-                        Constants.USER_NORMATL_CONSUME_COUNT));
+                        float userNormalConsumeCnt = Float.valueOf(StringUtils.getFieldFromConcatString(userFeature, "\\|",
+                                Constants.USER_NORMATL_CONSUME_COUNT));
 
 
-                float userCouponConsumeCnt =Float.valueOf(StringUtils.getFieldFromConcatString(userFeature, "\\|",
-                        Constants.USER_HASCOUPON_USED_COUNT));
+                        float userCouponConsumeCnt = Float.valueOf(StringUtils.getFieldFromConcatString(userFeature, "\\|",
+                                Constants.USER_HASCOUPON_USED_COUNT));
 
-                float userNoUsedCouponCnt =Float.valueOf(StringUtils.getFieldFromConcatString(userFeature, "\\|",
-                        Constants.USER_HASCOUPON_NOUSED_COUNT));
+                        float userNoUsedCouponCnt = Float.valueOf(StringUtils.getFieldFromConcatString(userFeature, "\\|",
+                                Constants.USER_HASCOUPON_NOUSED_COUNT));
 
-                int normalConsumeCnt = 0;
-                int couponConsumeCnt = 0;
-                int noUsedCouponCnt = 0;
-                while (iterator.hasNext()) {
-                    Row row = iterator.next();
+                        int normalConsumeCnt = 0;
+                        int couponConsumeCnt = 0;
+                        int noUsedCouponCnt = 0;
+                        while (iterator.hasNext()) {
+                            Row row = iterator.next();
 
-                    String couponId = row.getString(2);
-                    String dataPay = row.getString(6);
+                            String couponId = row.getString(2);
+                            String dataPay = row.getString(6);
 
-                    if (StringUtils.isEmpty(couponId) && StringUtils.notEmpty(dataPay)) {
-                        normalConsumeCnt++;
+                            if (StringUtils.isEmpty(couponId) && StringUtils.notEmpty(dataPay)) {
+                                normalConsumeCnt++;
+                            }
+                            if (StringUtils.notEmpty(couponId) && StringUtils.notEmpty(dataPay)) {
+                                couponConsumeCnt++;
+                            }
+                            if (StringUtils.notEmpty(couponId) && StringUtils.isEmpty(dataPay)) {
+                                noUsedCouponCnt++;
+                            }
+
+
+                        }
+
+                        float userMerchantNormalRate = userNormalConsumeCnt > 0 ?
+                                normalConsumeCnt / userNormalConsumeCnt : 0.f;
+                        float userMerchantCoupUsedRate = userCouponConsumeCnt > 0 ?
+                                couponConsumeCnt / userCouponConsumeCnt : 0.f;
+                        float userMerchantHasCoupNoUsedRate = userNoUsedCouponCnt > 0 ?
+                                noUsedCouponCnt / userNoUsedCouponCnt : 0.f;
+
+                        long perMerConsumCnt = normalConsumeCnt + couponConsumeCnt + noUsedCouponCnt;
+
+                        float userPerMerNormalConsumeRate = Float.valueOf(normalConsumeCnt) / perMerConsumCnt;
+                        float userPerMerCoupUsedConsumeRate = Float.valueOf(couponConsumeCnt) / perMerConsumCnt;
+                        float userPerMerHasCoupNoUsedConsumeRate = Float.valueOf(noUsedCouponCnt) / perMerConsumCnt;
+
+                        String normalCnt = Constants.USER_PER_MERCHANT_NORMATL_CONSUME_CNT + "=" + normalConsumeCnt;
+                        String couponCnt = Constants.USER_PER_MERCHANT_COUPON_CONSUME_CNT + "=" + couponConsumeCnt;
+                        String noUsedCnt = Constants.USER_PER_MERCHANT_HASCOUPON_NOUSED_CONSUME_CNT + "=" + noUsedCouponCnt;
+
+                        return new Tuple2<String, String>(tuple._1(), normalCnt + "|" + couponCnt + "|" + noUsedCnt + "|"
+                                + Constants.USER_PER_MER_NORM_CONSUME_RATE + "=" + userPerMerNormalConsumeRate + "|"
+                                + Constants.USER_PER_MER_COUPON_CONSUME_RATE + "=" + userPerMerCoupUsedConsumeRate + "|"
+                                + Constants.USER_PER_MER_COUPON_NOUSED_CONSUME_RATE + "=" + userPerMerHasCoupNoUsedConsumeRate + "|"
+                                + Constants.USER_MERCHANT_NORMATL_CONSUME_RATE + "=" + userMerchantNormalRate + "|"
+                                + Constants.USER_MERCHANT_COUPON_CONSUME_RATE + "=" + userMerchantCoupUsedRate + "|"
+                                + Constants.USER_MERCHANT_NOUSE_COUP_CONSUME_RATE + "=" + userMerchantHasCoupNoUsedRate
+
+                        );
                     }
-                    if (StringUtils.notEmpty(couponId) && StringUtils.notEmpty(dataPay)) {
-                        couponConsumeCnt++;
-                    }
-                    if (StringUtils.notEmpty(couponId) && StringUtils.isEmpty(dataPay)){
-                        noUsedCouponCnt++;
-                    }
+                });
 
 
-                }
-
-                float userMerchantNormalRate = userNormalConsumeCnt > 0 ?
-                               normalConsumeCnt/userNormalConsumeCnt:0.f;
-                float userMerchantCoupUsedRate =userCouponConsumeCnt > 0 ?
-                                couponConsumeCnt/userCouponConsumeCnt:0.f;
-                float userMerchantHasCoupNoUsedRate =userNoUsedCouponCnt > 0 ?
-                                noUsedCouponCnt/userNoUsedCouponCnt : 0.f;
-
-                long perMerConsumCnt = normalConsumeCnt+couponConsumeCnt+noUsedCouponCnt;
-
-                float userPerMerNormalConsumeRate = Float.valueOf(normalConsumeCnt)/perMerConsumCnt;
-                float userPerMerCoupUsedConsumeRate = Float.valueOf(couponConsumeCnt)/perMerConsumCnt;
-                float userPerMerHasCoupNoUsedConsumeRate = Float.valueOf(noUsedCouponCnt)/perMerConsumCnt;
-
-                String normalCnt = Constants.USER_PER_MERCHANT_NORMATL_CONSUME_CNT + "=" + normalConsumeCnt;
-                String couponCnt = Constants.USER_PER_MERCHANT_COUPON_CONSUME_CNT + "=" + couponConsumeCnt;
-                String noUsedCnt = Constants.USER_PER_MERCHANT_HASCOUPON_NOUSED_CONSUME_CNT + "=" + noUsedCouponCnt;
-
-                return new Tuple2<String, String>(tuple._1(), normalCnt + "|" + couponCnt + "|" + noUsedCnt + "|"
-                        + Constants.USER_PER_MER_NORM_CONSUME_RATE + "=" + userPerMerNormalConsumeRate + "|"
-                        + Constants.USER_PER_MER_COUPON_CONSUME_RATE + "=" + userPerMerCoupUsedConsumeRate + "|"
-                        + Constants.USER_PER_MER_COUPON_NOUSED_CONSUME_RATE + "=" + userPerMerHasCoupNoUsedConsumeRate+ "|"
-                        +Constants.USER_MERCHANT_NORMATL_CONSUME_RATE + "=" +userMerchantNormalRate + "|"
-                        + Constants.USER_MERCHANT_COUPON_CONSUME_RATE + "=" + userMerchantCoupUsedRate + "|"
-                        + Constants.USER_MERCHANT_NOUSE_COUP_CONSUME_RATE + "=" + userMerchantHasCoupNoUsedRate
-
-                );
-            }
-        });
-
-        
-        OutputManager.saveFeatures(sqlContext,userIdMerchantId2DiffConsumeRDD,path,featureType);
+        String userMerPath = Constants.TRAIN_OFF_USER_MER_FEATURE_PATH;
+        if (online) {
+            userMerPath = Constants.TRAIN_ONLINE_USER_MER_FEATURE_PATH;
+        }
+        OutputManager.saveFeatures(sqlContext, userIdMerchantId2DiffConsumeRDD, userMerPath,
+                Constants.SAVE_USER_MER_FEATURE_TYPE);
 
 //        userIdMerchantId2DiffConsumeRDD.sortByKey().foreach(new VoidFunction<Tuple2<String, String>>() {
 //            @Override
@@ -420,14 +455,14 @@ public class ExtractFeatures {
 
     /**
      * merchant
+     *
      * @param rawDataRDD
      * @param online
      */
-    private  static  void getMerchantConsume(final JavaPairRDD<String, Row> rawDataRDD,
-                                             JavaPairRDD<String, Row> filterCouponRDD,
-                                             JavaSparkContext jsc,
-                                             final Boolean online,SQLContext sqlContext,
-                                             String path,int featureType){
+    private static void getMerchantConsume(final JavaPairRDD<String, Row> rawDataRDD,
+                                           JavaPairRDD<String, Row> filterCouponRDD,
+                                           JavaSparkContext jsc,
+                                           final Boolean online, SQLContext sqlContext) {
 
         /**
          * 商户消费的不同用户量
@@ -534,7 +569,7 @@ public class ExtractFeatures {
                 //商户id
                 String merchantId = row.getString(1);
 
-                String cntValue = getValuefeatureMapHelper(row,new MerchantFeatures(),online);
+                String cntValue = getValuefeatureMapHelper(row, new MerchantFeatures(), online);
 
                 return new Tuple2<String, String>(merchantId, cntValue);
             }
@@ -579,65 +614,70 @@ public class ExtractFeatures {
             }
         });
 
-        merId2AllInfosRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
-            @Override
-            public void call(Tuple2<String, String> tuple2) throws Exception {
-                System.out.println(tuple2._1() + " :" + tuple2._2());
-            }
-        });
+//        merId2AllInfosRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
+//            @Override
+//            public void call(Tuple2<String, String> tuple2) throws Exception {
+//                System.out.println(tuple2._1() + " :" + tuple2._2());
+//            }
+//        });
 
-        OutputManager.saveFeatures(sqlContext,merId2AllInfosRDD,path,featureType);
+        String path = Constants.TRAIN_OFF_MERCHANT_FEATURE_PATH;
+        int type = Constants.SAVE_MERCHANT_FEATURE_TYPE;
+        if (online) {
+            path = Constants.TRAIN_ONLINE_MERCHANT_FEATURE_PATH;
+        }
+
+        OutputManager.saveFeatures(sqlContext, merId2AllInfosRDD, path, type);
 
     }
 
 
-    private  static  String calculateRate(String v1,CouponFeatures feature,boolean isOnline){
-
+    private static String calculateRate(String v1, CouponFeatures feature, boolean isOnline) {
 
 
         // 未使用优惠券
         float hasCouponNoUsedCnt = Float.valueOf(StringUtils.getFieldFromConcatString(v1,
-                "\\|",feature.getHasCouponNoUsedCnt()));
+                "\\|", feature.getHasCouponNoUsedCnt()));
         // 使用优惠券
         float couponUsedCnt = Float.valueOf(StringUtils.getFieldFromConcatString(v1,
-                "\\|",feature.getHasCouponUsedCnt()));
+                "\\|", feature.getHasCouponUsedCnt()));
 
         float normalConsumeCnt = Float.valueOf(StringUtils.getFieldFromConcatString(v1,
-                "\\|",feature.getNormalConsumeCnt()));
+                "\\|", feature.getNormalConsumeCnt()));
         // 总消费次数
         float cnt = Float.valueOf(StringUtils.getFieldFromConcatString(v1,
-                "\\|",feature.getConsumeCnt()));
+                "\\|", feature.getConsumeCnt()));
 
         float dis50cnt = Float.valueOf(StringUtils.getFieldFromConcatString(v1,
-                "\\|",feature.getDiscount50Cnt()));
+                "\\|", feature.getDiscount50Cnt()));
         float dis200cnt = Float.valueOf(StringUtils.getFieldFromConcatString(v1,
-                "\\|",feature.getDiscount200Cnt()));
+                "\\|", feature.getDiscount200Cnt()));
 
         float dis500cnt = Float.valueOf(StringUtils.getFieldFromConcatString(v1,
-                "\\|",feature.getDiscount500Cnt()));
+                "\\|", feature.getDiscount500Cnt()));
         float disMoreCnt = Float.valueOf(StringUtils.getFieldFromConcatString(v1,
-                "\\|",feature.getDiscount500MoreCnt()));
+                "\\|", feature.getDiscount500MoreCnt()));
         float disDirectcnt = Float.valueOf(StringUtils.getFieldFromConcatString(v1,
-                "\\|",feature.getDirectDiscountCnt()));
+                "\\|", feature.getDirectDiscountCnt()));
 
         float disFixedcnt = Float.valueOf(StringUtils.getFieldFromConcatString(v1,
-                "\\|",feature.getFixedDiscountCnt()));
+                "\\|", feature.getFixedDiscountCnt()));
 
         float disLess15cnt = Float.valueOf(StringUtils.getFieldFromConcatString(v1,
-                "\\|",feature.getLess15ConsumeCnt()));
+                "\\|", feature.getLess15ConsumeCnt()));
 
         // 全部折扣的和  计算平均折扣率
         float allDiscountRate = Float.valueOf(StringUtils.getFieldFromConcatString(v1,
-                "\\|",feature.getCouponRate())) ;
+                "\\|", feature.getCouponRate()));
         long discountCnt = 0;
         // 优惠券发放量
         float couponCnt = hasCouponNoUsedCnt + couponUsedCnt;
         String initialRate = feature.getInitialRateValue();
-        Map<String,Float> rateMap = new HashMap<String, Float>();
+        Map<String, Float> rateMap = new HashMap<String, Float>();
 
 
-        if (isOnline ){
-            if (feature instanceof  UserFeatures) {
+        if (isOnline) {
+            if (feature instanceof UserFeatures) {
                 UserFeatures userFeature = (UserFeatures) feature;
 
                 initialRate = initialRate + "|" + Constants.USER_ACTION_0_RATE + "=" + "0" + "|"
@@ -654,136 +694,136 @@ public class ExtractFeatures {
 
 
                 float userClickRate = cliclCnt / cnt;
-                float userBuyRate = buyCnt/ cnt;
-                float userGetCouponRate = getActionCnt/ cnt;
+                float userBuyRate = buyCnt / cnt;
+                float userGetCouponRate = getActionCnt / cnt;
 
                 rateMap.put(userFeature.getUserActionRate(Constants.USER_ACTION_CLICK), userClickRate);
                 rateMap.put(userFeature.getUserActionRate(Constants.USER_ACTION_BUY), userBuyRate);
                 rateMap.put(userFeature.getUserActionRate(Constants.USER_ACTION_GET_COUPON), userGetCouponRate);
             }
 
-        }else {
+        } else {
             Float aggreDistance = Float.valueOf(StringUtils.getFieldFromConcatString(v1,
-                    "\\|",feature.getDistanceAggre()));
-            if (aggreDistance != -1){
-                float averageDistance = aggreDistance/couponUsedCnt;
+                    "\\|", feature.getDistanceAggre()));
+            if (aggreDistance != -1) {
+                float averageDistance = aggreDistance / couponUsedCnt;
 
-                rateMap.put(feature.getDistanceAverage(),averageDistance);
+                rateMap.put(feature.getDistanceAverage(), averageDistance);
             }
 
 
         }
 
 
-
-
-        if (normalConsumeCnt > 0){
-            float normalConsumeRate = normalConsumeCnt/cnt;
-            rateMap.put(feature.getCouponNormalConsumeRate(),normalConsumeRate);
+        if (normalConsumeCnt > 0) {
+            float normalConsumeRate = normalConsumeCnt / cnt;
+            rateMap.put(feature.getCouponNormalConsumeRate(), normalConsumeRate);
 
 
         }
-        if (hasCouponNoUsedCnt > 0){
-            float hasCouponNoUsedConsumeRate = hasCouponNoUsedCnt/cnt;
-            rateMap.put(feature.getCouponHasNoUsedConsumeRate(),hasCouponNoUsedConsumeRate);
+        if (hasCouponNoUsedCnt > 0) {
+            float hasCouponNoUsedConsumeRate = hasCouponNoUsedCnt / cnt;
+            rateMap.put(feature.getCouponHasNoUsedConsumeRate(), hasCouponNoUsedConsumeRate);
 
         }
-        if (couponUsedCnt > 0){
+        if (couponUsedCnt > 0) {
             // 使用优惠券消费
-            float hasCouponUsedConsumeRate = hasCouponNoUsedCnt/cnt;
-            rateMap.put(feature.getCouponHasUsedConsumeRate(),hasCouponUsedConsumeRate);
+            float hasCouponUsedConsumeRate = hasCouponNoUsedCnt / cnt;
+            rateMap.put(feature.getCouponHasUsedConsumeRate(), hasCouponUsedConsumeRate);
 
             // 核销率
-            float couponChargeOffRate = couponUsedCnt/couponCnt;
-            rateMap.put(feature.getCouponChargeOffRate(),couponChargeOffRate);
-
-
+            float couponChargeOffRate = couponUsedCnt / couponCnt;
+            rateMap.put(feature.getCouponChargeOffRate(), couponChargeOffRate);
 
 
         }
-        if (dis50cnt > 0 ){
+        if (dis50cnt > 0) {
             discountCnt += dis50cnt;
-            float dis50Rate = dis50cnt/cnt;
-            rateMap.put(feature.getCoupon50Rate(),dis50Rate);
+            float dis50Rate = dis50cnt / cnt;
+            rateMap.put(feature.getCoupon50Rate(), dis50Rate);
         }
-        if (dis200cnt > 0){
+        if (dis200cnt > 0) {
             discountCnt += dis200cnt;
-            float dis200Rate = dis200cnt/cnt;
-            rateMap.put(feature.getCoupon200Rate(),dis200Rate);
+            float dis200Rate = dis200cnt / cnt;
+            rateMap.put(feature.getCoupon200Rate(), dis200Rate);
 
         }
-        if (dis500cnt > 0){
+        if (dis500cnt > 0) {
             discountCnt += dis500cnt;
 
-            float dis500Rate = dis500cnt/cnt;
-            rateMap.put(feature.getCoupon500Rate(),dis500Rate);
+            float dis500Rate = dis500cnt / cnt;
+            rateMap.put(feature.getCoupon500Rate(), dis500Rate);
         }
-        if (disMoreCnt > 0){
+        if (disMoreCnt > 0) {
             discountCnt += disMoreCnt;
-            float disMoreRate = disMoreCnt/cnt;
-            rateMap.put(feature.getCoupon500MoreRate(),disMoreRate);
+            float disMoreRate = disMoreCnt / cnt;
+            rateMap.put(feature.getCoupon500MoreRate(), disMoreRate);
         }
 
-        if (disDirectcnt > 0){
+        if (disDirectcnt > 0) {
             discountCnt += disDirectcnt;
-            float disDirctRate = disDirectcnt/cnt;
-            rateMap.put(feature.getCouponDirectRate(),disDirctRate);
+            float disDirctRate = disDirectcnt / cnt;
+            rateMap.put(feature.getCouponDirectRate(), disDirctRate);
 
         }
-        if (disFixedcnt > 0){
-            float disFixRate=disDirectcnt/cnt;
-            rateMap.put(feature.getCouponFixedRate(),disFixRate);
+        if (disFixedcnt > 0) {
+            float disFixRate = disDirectcnt / cnt;
+            rateMap.put(feature.getCouponFixedRate(), disFixRate);
         }
 
-        if (disLess15cnt > 0){
-            float disLess15Rate= 1 - disLess15cnt/15;
-            rateMap.put(feature.getCouponLess15ConsumeRate(),disLess15Rate);
+        if (disLess15cnt > 0) {
+            float disLess15Rate = 1 - disLess15cnt / 15;
+            rateMap.put(feature.getCouponLess15ConsumeRate(), disLess15Rate);
 
         }
 
-        float averageDiscountRate = allDiscountRate/Float.valueOf(discountCnt);
-        if (averageDiscountRate > 0){
-            rateMap.put(Constants.AVERAGE_DISCOUNT_RATE,averageDiscountRate);
+        float averageDiscountRate = allDiscountRate / Float.valueOf(discountCnt);
+        if (averageDiscountRate > 0) {
+            rateMap.put(Constants.AVERAGE_DISCOUNT_RATE, averageDiscountRate);
         }
 
 
-        for (Map.Entry<String,Float> entry : rateMap.entrySet()) {
+        for (Map.Entry<String, Float> entry : rateMap.entrySet()) {
 
             initialRate = StringUtils.setFieldInConcatString(initialRate, "\\|",
                     entry.getKey(), String.valueOf(entry.getValue()));
         }
 
 
-       return initialRate;
+        return initialRate;
 
     }
 
 
-    private  static String getValuefeatureMapHelper(Row row,CouponFeatures feature,boolean isOnline){
+    private static String getValuefeatureMapHelper(Row row, CouponFeatures feature, boolean isOnline) {
         int couponIndex = 2;
-        String cntValue =feature.getInitialCountValue();
+        String cntValue = feature.getInitialCountValue();
         int actionId = 0;
 
-        if (isOnline && feature instanceof UserFeatures){
-
-           UserFeatures userFeatures = (UserFeatures)feature;
+        if (isOnline) {
             couponIndex = 3;
-            actionId = Integer.valueOf(row.getString(2));
 
-            String actionKey =userFeatures.getUserAction(actionId) ;
 
-            cntValue = cntValue + "|" + Constants.USER_ACTION_0_COUNT +"=" + "0" +"|"
-                      + Constants.USER_ACTION_1_COUNT +"=" + "0" +"|"
-                    + Constants.USER_ACTION_2_COUNT +"=" + "0" ;
-            cntValue = StringUtils.setFieldInConcatString(cntValue,
-                    "\\|",actionKey, "1");
+            if (feature instanceof UserFeatures) {
+                UserFeatures userFeatures = (UserFeatures) feature;
+                actionId = Integer.valueOf(row.getString(2));
+
+                String actionKey = userFeatures.getUserAction(actionId);
+
+                cntValue = cntValue + "|" + Constants.USER_ACTION_0_COUNT + "=" + "0" + "|"
+                        + Constants.USER_ACTION_1_COUNT + "=" + "0" + "|"
+                        + Constants.USER_ACTION_2_COUNT + "=" + "0";
+                cntValue = StringUtils.setFieldInConcatString(cntValue,
+                        "\\|", actionKey, "1");
+
+            }
 
 
         }
         // 优惠券id
         String couponId = row.getString(couponIndex);
         // 折扣
-        String discountRate = row.getString(couponIndex+1);
+        String discountRate = row.getString(couponIndex + 1);
 
         // 消费券获得日
         String dateRecevied = row.getString(5);
@@ -797,7 +837,7 @@ public class ExtractFeatures {
 
         if (StringUtils.isEmpty(couponId) && !StringUtils.isEmpty(datePay)) {
             cntValue = StringUtils.setFieldInConcatString(cntValue,
-                    "\\|",feature.getNormalConsumeCnt(), "1");
+                    "\\|", feature.getNormalConsumeCnt(), "1");
         }
         // 获得消费券 但是没有使用 即负样本
         if (StringUtils.notEmpty(couponId) && StringUtils.isEmpty(datePay)) {
@@ -808,25 +848,25 @@ public class ExtractFeatures {
         // 有消费券并且已经使用
         if (StringUtils.notEmpty(datePay) && StringUtils.notEmpty(couponId)) {
             cntValue = StringUtils.setFieldInConcatString(cntValue,
-                    "\\|",feature.getHasCouponUsedCnt(), "1");
+                    "\\|", feature.getHasCouponUsedCnt(), "1");
 
-           // 线下数据 处理用户distance特征
-            if (couponIndex == 2){
+            // 线下数据 处理用户distance特征
+            if (couponIndex == 2) {
                 String distance = row.getString(4);
 
                 if (StringUtils.notEmpty(distance)) {
 
-                   String  cntValue1 = StringUtils.setFieldInConcatString(cntValue,
+                    String cntValue1 = StringUtils.setFieldInConcatString(cntValue,
                             "\\|", feature.getDistanceAggre(), distance);
-                   cntValue = cntValue1;
+                    cntValue = cntValue1;
                 }
 
             }
 
-            int interval = DateUtils.getDayTimeInterval(dateRecevied,datePay);
-            if (interval < 15){
+            int interval = DateUtils.getDayTimeInterval(dateRecevied, datePay);
+            if (interval < 15) {
                 cntValue = StringUtils.setFieldInConcatString(cntValue,
-                        "\\|",feature.getLess15ConsumeCnt(), "1");
+                        "\\|", feature.getLess15ConsumeCnt(), "1");
             }
 
             int coupponType = CouponType.couponDiscountType(discountRate);
@@ -834,66 +874,62 @@ public class ExtractFeatures {
             switch (coupponType) {
 
                 case Constants.COUPON_DIRECT:
-                     rate = CouponType.getDiscountRate(discountRate);
-                     cntValue = StringUtils.setFieldInConcatString(cntValue ,
-                                 "\\|",feature.getCouponRate(), String.valueOf(rate));
+                    rate = CouponType.getDiscountRate(discountRate);
                     cntValue = StringUtils.setFieldInConcatString(cntValue,
-                            "\\|",feature.getDirectDiscountCnt(), "1");
+                            "\\|", feature.getCouponRate(), String.valueOf(rate));
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|", feature.getDirectDiscountCnt(), "1");
                     break;
                 case Constants.COUPON_FIXED:
                     cntValue = StringUtils.setFieldInConcatString(cntValue,
-                            "\\|",feature.getFixedDiscountCnt(), "1");
+                            "\\|", feature.getFixedDiscountCnt(), "1");
 
                     break;
                 case Constants.COUPON_50:
 
-                      rate = CouponType.getDiscountRate(discountRate);
+                    rate = CouponType.getDiscountRate(discountRate);
 
-                     cntValue = StringUtils.setFieldInConcatString(cntValue ,
-                                 "\\|",feature.getCouponRate(), String.valueOf(rate));
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|", feature.getCouponRate(), String.valueOf(rate));
 
-                     cntValue = StringUtils.setFieldInConcatString(cntValue,
-                            "\\|",feature.getDiscount50Cnt(), "1");
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|", feature.getDiscount50Cnt(), "1");
 
                     break;
                 case Constants.COUPON_200:
                     rate = CouponType.getDiscountRate(discountRate);
-                     cntValue = StringUtils.setFieldInConcatString(cntValue ,
-                                 "\\|",feature.getCouponRate(), String.valueOf(rate));
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|", feature.getCouponRate(), String.valueOf(rate));
 
                     cntValue = StringUtils.setFieldInConcatString(cntValue,
-                            "\\|",feature.getDiscount200Cnt(), "1");
+                            "\\|", feature.getDiscount200Cnt(), "1");
 
                     break;
                 case Constants.COUPON_500:
-                     rate = CouponType.getDiscountRate(discountRate);
-                      cntValue = StringUtils.setFieldInConcatString(cntValue ,
-                                  "\\|",feature.getCouponRate(), String.valueOf(rate));
+                    rate = CouponType.getDiscountRate(discountRate);
                     cntValue = StringUtils.setFieldInConcatString(cntValue,
-                            "\\|",feature.getDiscount500Cnt(), "1");
+                            "\\|", feature.getCouponRate(), String.valueOf(rate));
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|", feature.getDiscount500Cnt(), "1");
 
                     break;
                 case Constants.COUPON_500_MORE:
-                     rate = CouponType.getDiscountRate(discountRate);                    
-                      cntValue = StringUtils.setFieldInConcatString(cntValue ,           
-                                  "\\|",feature.getCouponRate(), String.valueOf(rate));  
+                    rate = CouponType.getDiscountRate(discountRate);
                     cntValue = StringUtils.setFieldInConcatString(cntValue,
-                            "\\|",feature.getDiscount500MoreCnt(), "1");
+                            "\\|", feature.getCouponRate(), String.valueOf(rate));
+                    cntValue = StringUtils.setFieldInConcatString(cntValue,
+                            "\\|", feature.getDiscount500MoreCnt(), "1");
 
-                     break;
+                    break;
 
             }
         }
 
 
-            return  cntValue;
-
+        return cntValue;
 
 
     }
-
-
-
 
 
 }
