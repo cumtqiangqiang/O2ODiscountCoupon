@@ -13,7 +13,7 @@ public class UserFeatureModel implements Serializable {
     private String userid;
     private String userUniqueCousumeMerchantCnt;
     private String userUniqueCouponCnt;
-    private String uerConsumeCnt;
+    private String userConsumeCnt;
     private String userNormalConsumeCnt;
     private String userHasCouponUsedCnt;
     private String userHasCouponNoUsedCnt;
@@ -119,11 +119,11 @@ public class UserFeatureModel implements Serializable {
     }
 
     public String getUerConsumeCnt() {
-        return uerConsumeCnt;
+        return userConsumeCnt;
     }
 
-    public void setUerConsumeCnt(String uerConsumeCnt) {
-        this.uerConsumeCnt = uerConsumeCnt;
+    public void setUerConsumeCnt(String userConsumeCnt) {
+        this.userConsumeCnt = userConsumeCnt;
     }
 
 //    public String getUserAggreDistance() {
