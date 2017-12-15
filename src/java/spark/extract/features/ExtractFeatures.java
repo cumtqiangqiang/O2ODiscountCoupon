@@ -65,10 +65,28 @@ public class ExtractFeatures {
         }).persist(StorageLevel.MEMORY_AND_DISK());
 
 
-        getUserConsumeFeatures(rawDataRDD,filterCouponRDD,jsc,false,sqlContext);
+        String[] offlinePath = {Constants.LESS_OFFLINE_USER_DATA_PATH,Constants.LESS_OFFLINE_MER_DATA_PATH,
+                            Constants.LESS_OFFLINE_USER_MER_DATA_PATH};
+
+        String[] onlinePath = {Constants.LESS_ONLINE_USER_DATA_PATH,Constants.LESS_ONLINE_MER_DATA_PATH,
+                Constants.LESS_ONLINE_USER_MER_DATA_PATH};
+
+        for (int i = 0; i < offlinePath.length; i++) {
+
+            getUserConsumeFeatures(rawDataRDD,filterCouponRDD,jsc,false,sqlContext,
+                    offlinePath[i],i);
+
+            getUserConsumeFeatures(rawDataRDD,filterCouponRDD,jsc,true,sqlContext,
+                    onlinePath[i],i);
+
+            getMerchantConsume(rawDataRDD,filterCouponRDD,jsc,false,sqlContext,
+                    offlinePath[i],i);
+
+            getMerchantConsume(rawDataRDD,filterCouponRDD,jsc,false,sqlContext,
+                    onlinePath[i],i);
+        }
 
 
-        getMerchantConsume(rawDataRDD,filterCouponRDD,jsc,false,sqlContext);
 
         jsc.stop();
 
@@ -278,7 +296,7 @@ public class ExtractFeatures {
 
 
 
-        OutputManager.saveFeatures(sqlContext,userId2AggrateRateRDD,Constants.SAVE_USER_FEATURE_TYPE);
+        OutputManager.saveFeatures(sqlContext,userId2AggrateRateRDD,path,featureType);
 
         System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 
@@ -388,7 +406,7 @@ public class ExtractFeatures {
         });
 
         
-        OutputManager.saveFeatures(sqlContext,userIdMerchantId2DiffConsumeRDD,Constants.SAVE_USER_MER_FEATURE_TYPE);
+        OutputManager.saveFeatures(sqlContext,userIdMerchantId2DiffConsumeRDD,path,featureType);
 
 //        userIdMerchantId2DiffConsumeRDD.sortByKey().foreach(new VoidFunction<Tuple2<String, String>>() {
 //            @Override
@@ -409,7 +427,7 @@ public class ExtractFeatures {
                                              JavaPairRDD<String, Row> filterCouponRDD,
                                              JavaSparkContext jsc,
                                              final Boolean online,SQLContext sqlContext,
-                                             String path){
+                                             String path,int featureType){
 
         /**
          * 商户消费的不同用户量
@@ -568,7 +586,7 @@ public class ExtractFeatures {
             }
         });
 
-        OutputManager.saveFeatures(sqlContext,merId2AllInfosRDD,Constants.SAVE_MERCHANT_FEATURE_TYPE);
+        OutputManager.saveFeatures(sqlContext,merId2AllInfosRDD,path,featureType);
 
     }
 

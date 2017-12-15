@@ -21,7 +21,7 @@ import java.util.*;
 public class OutputManager {
 
   public  static void saveFeatures(SQLContext sqlContext, JavaPairRDD<String,String> featureRDD,
-                                   int saveType,String path){
+                                   String path,int saveType){
 
       switch (saveType){
           case Constants.SAVE_USER_FEATURE_TYPE:
