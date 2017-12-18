@@ -17,11 +17,9 @@ public class UserFeatureModel implements Serializable {
     private String userNormalConsumeCnt;
     private String userHasCouponUsedCnt;
     private String userHasCouponNoUsedCnt;
-
     private String userDiscount50Cnt;
     private String userDiscount200Cnt;
     private String userDiscount500Cnt;
-
     private String userDiscountMore500Cnt;
     private String userDiscountFixedCnt;
     private String userDirectDiscountCnt;
@@ -29,7 +27,6 @@ public class UserFeatureModel implements Serializable {
     private String userDiscountChargeOffRate;
     private String userAverageDistance;
     private String usernormalCounsumeRate;
-
     private String userHasCouponNoUseRate;
     private String userHasCouponUseRate;
     private String averageDiscountRate;
@@ -40,6 +37,11 @@ public class UserFeatureModel implements Serializable {
     private String userDiscountFixedRate;
     private String userDirectDiscountRate;
     private String userCouponUseTimeIntervalLess15Rate;
+
+    private String userActionClickRate;
+    private String userActionBuyRate;
+    private String userActionGetCouponRate;
+
     public String getUserDiscount50Cnt() {
         return userDiscount50Cnt;
     }
@@ -126,21 +128,6 @@ public class UserFeatureModel implements Serializable {
         this.userConsumeCnt = userConsumeCnt;
     }
 
-//    public String getUserAggreDistance() {
-//        return userAggreDistance;
-//    }
-//
-//    public void setUserAggreDistance(String userAggreDistance) {
-//        this.userAggreDistance = userAggreDistance;
-//    }
-
-//    public String getDiscountRate() {
-//        return discountRate;
-//    }
-//
-//    public void setDiscountRate(String discountRate) {
-//        this.discountRate = discountRate;
-//    }
 
     public String getUserNormalConsumeCnt() {
         return userNormalConsumeCnt;
@@ -165,7 +152,6 @@ public class UserFeatureModel implements Serializable {
     public void setUserHasCouponNoUsedCnt(String userHasCouponNoUsedCnt) {
         this.userHasCouponNoUsedCnt = userHasCouponNoUsedCnt;
     }
-
 
 
     public String getUserCouponUseTimeIntervalLess15Cnt() {
@@ -279,6 +265,32 @@ public class UserFeatureModel implements Serializable {
     public void setUserCouponUseTimeIntervalLess15Rate(String userCouponUseTimeIntervalLess15Rate) {
         this.userCouponUseTimeIntervalLess15Rate = userCouponUseTimeIntervalLess15Rate;
     }
+
+
+    public String getUserActionClickRate() {
+        return userActionClickRate;
+    }
+
+    public void setUserActionClickRate(String userActionClickRate) {
+        this.userActionClickRate = userActionClickRate;
+    }
+
+    public String getUserActionBuyRate() {
+        return userActionBuyRate;
+    }
+
+    public void setUserActionBuyRate(String userActionBuyRate) {
+        this.userActionBuyRate = userActionBuyRate;
+    }
+
+    public String getUserActionGetCouponRate() {
+        return userActionGetCouponRate;
+    }
+
+    public void setUserActionGetCouponRate(String userActionGetCouponRate) {
+        this.userActionGetCouponRate = userActionGetCouponRate;
+    }
+
 
 
 }

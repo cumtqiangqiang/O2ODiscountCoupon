@@ -38,7 +38,7 @@ public class ExtractFeatures {
         SQLContext sqlContext = new SQLContext(jsc.sc());
         Map<String, String> options = new HashMap<String, String>();
         options.put("header", "true");
-        options.put("path", Constants.TRAIN_OFFLINE_DATA_PATH);
+        options.put("path", Constants.LESS_OFFLINE_DATA_PATH);
         DataFrame offlineDf = sqlContext.load("com.databricks.spark.csv", options);
 
         offlineDf.registerTempTable("offline_counsume");
@@ -69,7 +69,7 @@ public class ExtractFeatures {
         }).persist(StorageLevel.MEMORY_AND_DISK());
 
 
-        options.put("path", Constants.TRAIN_ONLINE_DATA_PATH);
+        options.put("path", Constants.LESS_ONLINE_DATA_PATH);
 
         DataFrame onlineDf = sqlContext.load("com.databricks.spark.csv", options);
 
@@ -101,13 +101,13 @@ public class ExtractFeatures {
         }).persist(StorageLevel.MEMORY_AND_DISK());
 
 
-//        getUserConsumeFeatures(offlineRawDataRDD, offlinefilterCouponRDD, jsc, false, sqlContext);
+        getUserConsumeFeatures(offlineRawDataRDD, offlinefilterCouponRDD, jsc, false, sqlContext);
 
-        getUserConsumeFeatures(onlineRawDataRDD, onlinefilterCouponRDD, jsc, true, sqlContext);
+//        getUserConsumeFeatures(onlineRawDataRDD, onlinefilterCouponRDD, jsc, true, sqlContext);
 
-        getMerchantConsume(offlineRawDataRDD, offlinefilterCouponRDD, jsc, false, sqlContext);
-
-        getMerchantConsume(onlineRawDataRDD, onlinefilterCouponRDD, jsc, true, sqlContext);
+//        getMerchantConsume(offlineRawDataRDD, offlinefilterCouponRDD, jsc, false, sqlContext);
+//
+//        getMerchantConsume(onlineRawDataRDD, onlinefilterCouponRDD, jsc, true, sqlContext);
 
 
         jsc.stop();
@@ -224,15 +224,6 @@ public class ExtractFeatures {
          */
         final Broadcast<Map<String, String>> userid2UniqueMerCoupBroadcast = jsc.broadcast(userid2UniqueMerCoupMap);
 
-//        userUniqueMerCoupCntRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
-//            @Override
-//            public void call(Tuple2<String, String> tuple2) throws Exception {
-//                System.out.println(tuple2._1() + " : " + tuple2._2());
-//
-//            }
-//        });
-
-        System.out.println("----------------------------------------------------------");
         /**
          * userid -> 各种cnt RDD.
          */
@@ -262,15 +253,6 @@ public class ExtractFeatures {
         });
 
 
-//        userId2AggrateCntRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
-//            private static final long serialVersionUID = -2084825518255726690L;
-//
-//            @Override
-//            public void call(Tuple2<String, String> tuple) throws Exception {
-//                System.out.println("userid:" + tuple._1() + " cntValue:" + tuple._2());
-//            }
-//        });
-        System.out.println("-----------------------------------------------------------------------------");
         /**
          * userid -> 各种rate RDD   和cnt RDD 结合.
          */
@@ -296,38 +278,17 @@ public class ExtractFeatures {
             }
         });
 
-//        JavaPairRDD<String, String> userId2AggrateRateRDD  = userId2AggrateCntRDD.mapValues(new Function<String, String>() {
-//
-//
-//            private static final long serialVersionUID = -6548323846341356764L;
-//
-//            @Override
-//            public String call(String v1) throws Exception {
-//
-//                String rateV = calculateRate(v1, new UserFeatures(),online);
-//
-//                String userCntAndRateV = v1 + "|" + rateV;
-//
-//                return userCntAndRateV;
-//            }
-//        });
-//        userId2AggrateRateRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
-//            private static final long serialVersionUID = -2084825518255726690L;
-//
-//            @Override
-//            public void call(Tuple2<String, String> tuple) throws Exception {
-//                System.out.println("userid:" + tuple._1() + " rateValue:" + tuple._2());
-//            }
-//        });
 
-        String userPath = Constants.TRAIN_OFF_USER_FEATURE_PATH;
-        if (online) {
-            userPath = Constants.TRAIN_ONLINE_USER_FEATURE_PATH;
-        }
-        OutputManager.saveFeatures(sqlContext, userId2AggrateRateRDD, userPath,
+        OutputManager.saveFeatures(sqlContext, userId2AggrateRateRDD,online,
                 Constants.SAVE_USER_FEATURE_TYPE);
 
 
+        userId2AggrateRateRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
+            @Override
+            public void call(Tuple2<String, String> tuple2) throws Exception {
+                System.out.println("userId :"+tuple2._1() + "value :" + tuple2._2());
+            }
+        });
         System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 
         Map<String, String> userIdCntMap = userId2AggrateCntRDD.collectAsMap();
@@ -436,12 +397,9 @@ public class ExtractFeatures {
                 });
 
 
-        String userMerPath = Constants.TRAIN_OFF_USER_MER_FEATURE_PATH;
-        if (online) {
-            userMerPath = Constants.TRAIN_ONLINE_USER_MER_FEATURE_PATH;
-        }
-        OutputManager.saveFeatures(sqlContext, userIdMerchantId2DiffConsumeRDD, userMerPath,
-                Constants.SAVE_USER_MER_FEATURE_TYPE);
+
+//        OutputManager.saveFeatures(sqlContext, userIdMerchantId2DiffConsumeRDD,online,
+//                Constants.SAVE_USER_MER_FEATURE_TYPE);
 
 //        userIdMerchantId2DiffConsumeRDD.sortByKey().foreach(new VoidFunction<Tuple2<String, String>>() {
 //            @Override
@@ -614,20 +572,15 @@ public class ExtractFeatures {
             }
         });
 
-//        merId2AllInfosRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
-//            @Override
-//            public void call(Tuple2<String, String> tuple2) throws Exception {
-//                System.out.println(tuple2._1() + " :" + tuple2._2());
-//            }
-//        });
+        merId2AllInfosRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
+            @Override
+            public void call(Tuple2<String, String> tuple2) throws Exception {
+                System.out.println(tuple2._1() + " :" + tuple2._2());
+            }
+        });
 
-        String path = Constants.TRAIN_OFF_MERCHANT_FEATURE_PATH;
-        int type = Constants.SAVE_MERCHANT_FEATURE_TYPE;
-        if (online) {
-            path = Constants.TRAIN_ONLINE_MERCHANT_FEATURE_PATH;
-        }
 
-        OutputManager.saveFeatures(sqlContext, merId2AllInfosRDD, path, type);
+        OutputManager.saveFeatures(sqlContext, merId2AllInfosRDD,online,Constants.SAVE_MERCHANT_FEATURE_TYPE);
 
     }
 
