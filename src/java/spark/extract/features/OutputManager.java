@@ -4,8 +4,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.*;
 import scala.Tuple2;
 import spark.extract.features.constant.Constants;
 import spark.extract.features.domain.MerchantFeatureModel;
@@ -22,17 +21,17 @@ import java.util.*;
 public class OutputManager {
 
     public static void saveFeatures(SQLContext sqlContext, JavaPairRDD<String, String> featureRDD,
-                                    boolean online,int saveType) {
+                                    boolean online, int saveType) {
 
         switch (saveType) {
             case Constants.SAVE_USER_FEATURE_TYPE:
-                saveUserFeatures(sqlContext, featureRDD, online,saveType);
+                saveUserFeatures(sqlContext, featureRDD, online, saveType);
                 break;
             case Constants.SAVE_MERCHANT_FEATURE_TYPE:
-                saveMerchantFeatures(sqlContext, featureRDD, online,saveType);
+                saveMerchantFeatures(sqlContext, featureRDD, online, saveType);
                 break;
             case Constants.SAVE_USER_MER_FEATURE_TYPE:
-                saveUserMerchantFeatures(sqlContext, featureRDD, online,saveType);
+                saveUserMerchantFeatures(sqlContext, featureRDD, online, saveType);
 
         }
 
@@ -40,7 +39,7 @@ public class OutputManager {
     }
 
     private static void saveUserMerchantFeatures(SQLContext sqlContext, JavaPairRDD<String, String> rdd,
-                                                 boolean online,int saveType) {
+                                                 boolean online, int saveType) {
 
         JavaRDD<UserMerchantFeature> userMerchantRDD = rdd.map(new Function<Tuple2<String, String>, UserMerchantFeature>() {
             private static final long serialVersionUID = 622939869243808509L;
@@ -92,7 +91,7 @@ public class OutputManager {
         String userMerPath = "";
         if (online) {
             userMerPath = SparkUtil.getOnlineOutputFeaturePath(saveType);
-        }else {
+        } else {
             userMerPath = SparkUtil.getOfflineOutputFeaturePath(saveType);
         }
 
@@ -103,10 +102,10 @@ public class OutputManager {
 
 
     private static void saveUserFeatures(SQLContext sqlContext, JavaPairRDD<String, String> userFeaturesRDD,
-                                         final boolean online,int saveType) {
+                                         final boolean online, int saveType) {
 
-        JavaRDD<UserFeatureModel> userFeatureModelJavaRDD = userFeaturesRDD.mapPartitions(new FlatMapFunction<Iterator<
-                Tuple2<String, String>>, UserFeatureModel>() {
+        JavaRDD<UserFeatureModel> userFeatureModelJavaRDD = userFeaturesRDD.mapPartitions(new FlatMapFunction<Iterator
+                <Tuple2<String, String>>, UserFeatureModel>() {
 
 
             private static final long serialVersionUID = 7675853076302368898L;
@@ -180,7 +179,7 @@ public class OutputManager {
                     model.setUserCouponUseTimeIntervalLess15Rate(StringUtils.getFieldFromConcatString(feature, "\\|",
                             Constants.USER_DISCOUNT_LESS15_RATE));
 
-                    if (online){
+                    if (online) {
                         model.setUserActionClickRate(StringUtils.getFieldFromConcatString(feature, "\\|",
                                 Constants.USER_ACTION_0_RATE));
                         model.setUserActionBuyRate(StringUtils.getFieldFromConcatString(feature, "\\|",
@@ -200,10 +199,18 @@ public class OutputManager {
 
 
         DataFrame dataFrame = sqlContext.createDataFrame(userFeatureModelJavaRDD, UserFeatureModel.class);
+
+        if (!online){
+
+            dataFrame.drop(Constants.USER_ACTION_0_RATE);
+            dataFrame.drop(Constants.USER_ACTION_1_RATE);
+            dataFrame.drop(Constants.USER_ACTION_2_RATE);
+
+        }
         String userPath = "";
         if (online) {
             userPath = SparkUtil.getOnlineOutputFeaturePath(saveType);
-        }else {
+        } else {
             userPath = SparkUtil.getOfflineOutputFeaturePath(saveType);
         }
 
@@ -213,7 +220,7 @@ public class OutputManager {
 
 
     private static void saveMerchantFeatures(SQLContext sqlContext, JavaPairRDD<String, String> merchantInfosRDD,
-                                             boolean online,int saveType) {
+                                             boolean online, int saveType) {
 
 
         JavaRDD<MerchantFeatureModel> merchantFeatureModelJavaRDD = merchantInfosRDD.mapPartitions(new FlatMapFunction<
@@ -301,7 +308,7 @@ public class OutputManager {
         String path = "";
         if (online) {
             path = SparkUtil.getOnlineOutputFeaturePath(saveType);
-        }else {
+        } else {
             path = SparkUtil.getOfflineOutputFeaturePath(saveType);
         }
         dataFrame.write().format("com.databricks.spark.csv").option("header", "true").save(path);
