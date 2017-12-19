@@ -15,10 +15,7 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.storage.StorageLevel;
 import scala.Tuple2;
 import spark.extract.features.constant.Constants;
-import utils.Calculator;
-import utils.CouponType;
-import utils.DateUtils;
-import utils.StringUtils;
+import utils.*;
 
 import java.util.*;
 
@@ -38,7 +35,7 @@ public class ExtractFeatures {
         SQLContext sqlContext = new SQLContext(jsc.sc());
         Map<String, String> options = new HashMap<String, String>();
         options.put("header", "true");
-        options.put("path", Constants.LESS_OFFLINE_DATA_PATH);
+        options.put("path", SparkUtil.getOfflineInputPath());
         DataFrame offlineDf = sqlContext.load("com.databricks.spark.csv", options);
 
         offlineDf.registerTempTable("offline_counsume");
@@ -69,7 +66,7 @@ public class ExtractFeatures {
         }).persist(StorageLevel.MEMORY_AND_DISK());
 
 
-        options.put("path", Constants.LESS_ONLINE_DATA_PATH);
+        options.put("path", SparkUtil.getOnlineInputPath());
 
         DataFrame onlineDf = sqlContext.load("com.databricks.spark.csv", options);
 

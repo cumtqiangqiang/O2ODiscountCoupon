@@ -26,16 +26,17 @@ public interface Constants {
     String TRAIN_ONLINE_USER_MER_FEATURE_PATH = "Resource/features/online/trainUserMerFeature";
 
 
-    String LESS_OFFLINE_USER_DATA_PATH = "TestResource/offline/trainUserFeature";
-    String LESS_OFFLINE_MER_DATA_PATH = "TestResource/offline/trainMerFeature";
-    String LESS_OFFLINE_USER_MER_DATA_PATH = "TestResource/offline/trainUserMerFeature";
+    String LESS_OFFLINE_USER_FEATURE_PATH = "TestResource/offline/trainUserFeature";
+    String LESS_OFFLINE_MER_FEATURE_PATH = "TestResource/offline/trainMerFeature";
+    String LESS_OFFLINE_USER_MER_FEATURE_PATH = "TestResource/offline/trainUserMerFeature";
 
-    String LESS_ONLINE_USER_DATA_PATH = "TestResource/online/trainUserFeature";
-    String LESS_ONLINE_MER_DATA_PATH = "TestResource/online/trainMerFeature";
-    String LESS_ONLINE_USER_MER_DATA_PATH = "TestResource/online/trainUserMerFeature";
+    String LESS_ONLINE_USER_FEATURE_PATH = "TestResource/online/trainUserFeature";
+    String LESS_ONLINE_MER_FEATURE_PATH = "TestResource/online/trainMerFeature";
+    String LESS_ONLINE_USER_MER_FEATURE_PATH = "TestResource/online/trainUserMerFeature";
 
 
-
+     // 获取配置信息
+    String DATA_LESS_TEST = "data.less.test";
 
 
     /**
