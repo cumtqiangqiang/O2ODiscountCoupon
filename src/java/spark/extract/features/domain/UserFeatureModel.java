@@ -120,11 +120,11 @@ public class UserFeatureModel implements Serializable {
         this.userUniqueCouponCnt = userUniqueCouponCnt;
     }
 
-    public String getUerConsumeCnt() {
+    public String getUserConsumeCnt() {
         return userConsumeCnt;
     }
 
-    public void setUerConsumeCnt(String userConsumeCnt) {
+    public void setUserConsumeCnt(String userConsumeCnt) {
         this.userConsumeCnt = userConsumeCnt;
     }
 

@@ -128,7 +128,7 @@ public class OutputManager {
                             Constants.USER_UNIQUE_MERCHANT_COUNT));
                     model.setUserUniqueCouponCnt(StringUtils.getFieldFromConcatString(feature, "\\|",
                             Constants.USER_UNIQUE_COUPON_COUNT));
-                    model.setUerConsumeCnt(StringUtils.getFieldFromConcatString(feature, "\\|",
+                    model.setUserConsumeCnt(StringUtils.getFieldFromConcatString(feature, "\\|",
                             Constants.USER_CONSUME_COUNT));
 
                     model.setUserNormalConsumeCnt(StringUtils.getFieldFromConcatString(feature, "\\|",
@@ -202,9 +202,9 @@ public class OutputManager {
 
         if (!online){
 
-            dataFrame.drop(Constants.USER_ACTION_0_RATE);
-            dataFrame.drop(Constants.USER_ACTION_1_RATE);
-            dataFrame.drop(Constants.USER_ACTION_2_RATE);
+            dataFrame =  dataFrame.drop("userActionClickRate");
+            dataFrame = dataFrame.drop("userActionBuyRate");
+            dataFrame = dataFrame.drop("userActionGetCouponRate");
 
         }
         String userPath = "";

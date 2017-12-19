@@ -16,7 +16,7 @@ public class ConfigManager {
        try {
 
            InputStream input = ConfigManager.class.getClassLoader()
-                   .getResourceAsStream("resource/config.properties");
+                   .getResourceAsStream("properties/config.properties");
 
            properties.load(input);
 

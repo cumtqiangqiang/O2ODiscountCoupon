@@ -23,6 +23,7 @@ import java.util.*;
 /**
  * Created by UC227911 on 11/30/2017.
  */
+@SuppressWarnings("boxing")
 public class ExtractFeatures {
     public static void main(String[] args) {
 
@@ -98,9 +99,9 @@ public class ExtractFeatures {
         }).persist(StorageLevel.MEMORY_AND_DISK());
 
 
-        getUserConsumeFeatures(offlineRawDataRDD, offlinefilterCouponRDD, jsc, false, sqlContext);
+//        getUserConsumeFeatures(offlineRawDataRDD, offlinefilterCouponRDD, jsc, false, sqlContext);
 
-//        getUserConsumeFeatures(onlineRawDataRDD, onlinefilterCouponRDD, jsc, true, sqlContext);
+        getUserConsumeFeatures(onlineRawDataRDD, onlinefilterCouponRDD, jsc, true, sqlContext);
 
 //        getMerchantConsume(offlineRawDataRDD, offlinefilterCouponRDD, jsc, false, sqlContext);
 //
@@ -276,17 +277,17 @@ public class ExtractFeatures {
         });
 
 
-        OutputManager.saveFeatures(sqlContext, userId2AggrateRateRDD,online,
+        OutputManager.saveFeatures(sqlContext, userId2AggrateRateRDD, online,
                 Constants.SAVE_USER_FEATURE_TYPE);
 
 
-        userId2AggrateRateRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
-            @Override
-            public void call(Tuple2<String, String> tuple2) throws Exception {
-                System.out.println("userId :"+tuple2._1() + "value :" + tuple2._2());
-            }
-        });
-        System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+//        userId2AggrateRateRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
+//            @Override
+//            public void call(Tuple2<String, String> tuple2) throws Exception {
+//                System.out.println("userId :" + tuple2._1() + "value :" + tuple2._2());
+//            }
+//        });
+//        System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 
         Map<String, String> userIdCntMap = userId2AggrateCntRDD.collectAsMap();
 
@@ -392,7 +393,6 @@ public class ExtractFeatures {
                         );
                     }
                 });
-
 
 
 //        OutputManager.saveFeatures(sqlContext, userIdMerchantId2DiffConsumeRDD,online,
@@ -569,15 +569,15 @@ public class ExtractFeatures {
             }
         });
 
-        merId2AllInfosRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
-            @Override
-            public void call(Tuple2<String, String> tuple2) throws Exception {
-                System.out.println(tuple2._1() + " :" + tuple2._2());
-            }
-        });
+//        merId2AllInfosRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
+//            @Override
+//            public void call(Tuple2<String, String> tuple2) throws Exception {
+//                System.out.println(tuple2._1() + " :" + tuple2._2());
+//            }
+//        });
 
 
-        OutputManager.saveFeatures(sqlContext, merId2AllInfosRDD,online,Constants.SAVE_MERCHANT_FEATURE_TYPE);
+        OutputManager.saveFeatures(sqlContext, merId2AllInfosRDD, online, Constants.SAVE_MERCHANT_FEATURE_TYPE);
 
     }
 
