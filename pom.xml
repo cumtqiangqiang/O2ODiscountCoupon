@@ -35,7 +35,7 @@
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-streaming-kafka_2.10</artifactId>
-      <version>1.6.2</version>
+      <version>1.6.3</version>
     </dependency>
     <dependency>
       <groupId>com.alibaba</groupId>
@@ -56,7 +56,7 @@
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-core_2.10</artifactId>
-      <version>1.6.2</version>
+      <version>1.6.3</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
@@ -67,12 +67,12 @@
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-hive_2.10</artifactId>
-      <version>1.6.2</version>
+      <version>1.6.3</version>
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-sql_2.10</artifactId>
-      <version>1.6.2</version>
+      <version>1.6.3</version>
     </dependency>
     <dependency>
       <groupId>org.scala-lang</groupId>
@@ -95,15 +95,15 @@
     <!--<artifactId>spark-graphx_2.10</artifactId>-->
     <!--<version>1.6.1</version>-->
     <!--</dependency>-->
-    <!--<dependency>-->
-    <!--<groupId>org.apache.spark</groupId>-->
-    <!--<artifactId>spark-mllib_2.10</artifactId>-->
-    <!--<version>1.6.1</version>-->
-    <!--</dependency>-->
+    <dependency>
+    <groupId>org.apache.spark</groupId>
+    <artifactId>spark-mllib_2.10</artifactId>
+    <version>1.6.3</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-streaming_2.10</artifactId>
-      <version>1.6.2</version>
+      <version>1.6.3</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

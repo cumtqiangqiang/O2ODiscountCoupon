@@ -7,9 +7,9 @@ public interface Constants {
     /**
      * 输入文件路径
      */
-    String TRAIN_OFFLINE_DATA_PATH = "Resource/tb01ccf_offline_stage1_train.csv";
-    String TRAIN_ONLINE_DATA_PATH = "Resource/tb02ccf_online_stage1_train.csv";
-    String TEST_OFFLINE_DATA_PATH = "Resource/tb03ccf_offline_stage1_test_revised.csv";
+    String TRAIN_OFFLINE_DATA_PATH = "Resource/rawdata/tb01ccf_offline_stage1_train.csv";
+    String TRAIN_ONLINE_DATA_PATH = "Resource/rawdata/tb02ccf_online_stage1_train.csv";
+    String TEST_OFFLINE_DATA_PATH = "Resource/rawdata/tb03ccf_offline_stage1_test_revised.csv";
     String LESS_OFFLINE_DATA_PATH = "TestResource/test_offline_stage1_train.csv";
     String LESS_ONLINE_DATA_PATH = "TestResource/onlineTest.csv";
 
