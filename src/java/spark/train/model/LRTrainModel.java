@@ -7,12 +7,19 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.ml.Pipeline;
 import org.apache.spark.ml.PipelineModel;
 import org.apache.spark.ml.PipelineStage;
+import org.apache.spark.ml.classification.BinaryLogisticRegressionSummary;
 import org.apache.spark.ml.classification.LogisticRegression;
 import org.apache.spark.ml.classification.LogisticRegressionModel;
+import org.apache.spark.ml.classification.LogisticRegressionTrainingSummary;
 import org.apache.spark.ml.feature.HashingTF;
 import org.apache.spark.ml.feature.Tokenizer;
+import org.apache.spark.ml.feature.VectorAssembler;
+import org.apache.spark.sql.Column;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.functions;
+import org.apache.spark.sql.types.DataType;
+import org.apache.spark.sql.types.DataTypes;
 import utils.SparkUtil;
 
 import java.util.HashMap;
@@ -25,44 +32,80 @@ public class LRTrainModel {
     public static void main(String[] args) {
         SparkConf conf = new SparkConf()
                 .setAppName("O2OCoupon")
-                .setMaster("local");
+                .setMaster("local[2]");
 
         Logger.getLogger("org").setLevel(Level.ERROR);
         JavaSparkContext jsc = new JavaSparkContext(conf);
         SQLContext sqlContext = new SQLContext(jsc.sc());
         Map<String, String> options = new HashMap<String, String>();
         options.put("header", "true");
-        options.put("path", "TestResource/features/feature.csv");
+        options.put("path", "TestResource/train/train_features.csv");
         DataFrame featureDf = sqlContext.load("com.databricks.spark.csv", options);
-
-        options.put("path","TestResource/features/label_data.csv");
+//        featureDf.show(5);
+        options.put("path", "TestResource/train/train_label.csv");
         DataFrame labelDf = sqlContext.load("com.databricks.spark.csv", options);
+        DataFrame label = labelDf.select("label");
+        DataFrame joinDf= featureDf.join(label);
+        String[] joinColumns = joinDf.columns();
+        String[] featureColumns = featureDf.columns();
 
-        LogisticRegression lr = new LogisticRegression()
-                .setMaxIter(10)
-                .setRegParam(0.3)
-                .setElasticNetParam(0.8);
+        for (String col : joinColumns) {
 
-//        LogisticRegressionModel lrModel = lr.fit(featureDf);
-//        System.out.println("Coefficients: "
-//                + lrModel.coefficients() + " Intercept: " + lrModel.intercept());
+            Column column = joinDf.col(col).cast(DataTypes.DoubleType);
+            joinDf = joinDf.withColumn(col, column);
 
-        Tokenizer tokenizer = new Tokenizer()
-                .setInputCol("text")
-                .setOutputCol("words");
+        }
 
-        HashingTF hashingTF = new HashingTF()
-                .setNumFeatures(90)
-                .setInputCol(tokenizer.getOutputCol())
+
+        VectorAssembler assembler = new VectorAssembler()
+                .setInputCols(featureColumns)
                 .setOutputCol("features");
 
+        DataFrame transformFeatureDf = assembler.transform(joinDf);
 
-        Pipeline pipeline = new Pipeline()
-                .setStages(new PipelineStage[]{tokenizer,hashingTF,lr});
+        Double[] regs = new Double[]{0.1,1d,10d,0.3,3d};
+        Double[] enps = new Double[]{0.2,0.4,0.6,0.8,1d};
+        for (int i = 0;i < regs.length;i++){
+            LogisticRegression lr = new LogisticRegression()
+                    .setLabelCol("label")
+                    .setMaxIter(10000)
+                    .setRegParam(regs[i])
+                    .setElasticNetParam(enps[i]);
+
+            LogisticRegressionModel lrModel = lr.fit(transformFeatureDf);
+
+            System.out.println("\n+++++++++ Binomial logistic regression's Coefficients: "
+                    + lrModel.coefficients() + "\nBinomial Intercept: " + lrModel.intercept());
 
 
-        PipelineModel pipelineModel = pipeline.fit(featureDf);
+            LogisticRegressionTrainingSummary trainingSummary = lrModel.summary();
 
+            double[] objectiveHistory = trainingSummary.objectiveHistory();
+            for (double lossPerIteration : objectiveHistory) {
+                System.out.println(lossPerIteration);
+            }
+
+            BinaryLogisticRegressionSummary binarySummary =
+                    (BinaryLogisticRegressionSummary) trainingSummary;
+
+            DataFrame roc = binarySummary.roc();
+            roc.show();
+            roc.select("FPR").show();
+            System.out.println(binarySummary.areaUnderROC());
+
+            DataFrame fMeasure = binarySummary.fMeasureByThreshold();
+            double maxFMeasure = fMeasure.select(functions.max("F-Measure")).head().getDouble(0);
+            double bestThreshold = fMeasure.where(fMeasure.col("F-Measure").equalTo(maxFMeasure))
+                    .select("threshold").head().getDouble(0);
+            lrModel.setThreshold(bestThreshold);
+            System.out.println("------------------------------------------------");
+
+        }
+
+
+
+
+        jsc.stop();
     }
 
 
