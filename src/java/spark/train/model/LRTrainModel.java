@@ -63,14 +63,15 @@ public class LRTrainModel {
 
         DataFrame transformFeatureDf = assembler.transform(joinDf);
 
-        Double[] regs = new Double[]{0.1,1d,10d,0.3,3d};
-        Double[] enps = new Double[]{0.2,0.4,0.6,0.8,1d};
+//        Double[] regs = new Double[]{0.1,1d,10d,0.3,3d,5d,100d};
+        Double[] regs = new Double[]{0d};
+//        Double[] enps = new Double[]{0.8,8d,80d,800d,0.1};
         for (int i = 0;i < regs.length;i++){
             LogisticRegression lr = new LogisticRegression()
                     .setLabelCol("label")
                     .setMaxIter(10000)
                     .setRegParam(regs[i])
-                    .setElasticNetParam(enps[i]);
+                    .setElasticNetParam(0.8);
 
             LogisticRegressionModel lrModel = lr.fit(transformFeatureDf);
 
@@ -90,19 +91,17 @@ public class LRTrainModel {
 
             DataFrame roc = binarySummary.roc();
             roc.show();
-            roc.select("FPR").show();
+//            roc.select("FPR").show();
             System.out.println(binarySummary.areaUnderROC());
 
-            DataFrame fMeasure = binarySummary.fMeasureByThreshold();
-            double maxFMeasure = fMeasure.select(functions.max("F-Measure")).head().getDouble(0);
-            double bestThreshold = fMeasure.where(fMeasure.col("F-Measure").equalTo(maxFMeasure))
-                    .select("threshold").head().getDouble(0);
-            lrModel.setThreshold(bestThreshold);
+//            DataFrame fMeasure = binarySummary.fMeasureByThreshold();
+//            double maxFMeasure = fMeasure.select(functions.max("F-Measure")).head().getDouble(0);
+//            double bestThreshold = fMeasure.where(fMeasure.col("F-Measure").equalTo(maxFMeasure))
+//                    .select("threshold").head().getDouble(0);
+//            lrModel.setThreshold(bestThreshold);
             System.out.println("------------------------------------------------");
 
         }
-
-
 
 
         jsc.stop();
