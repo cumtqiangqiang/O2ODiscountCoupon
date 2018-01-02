@@ -16,6 +16,7 @@ public interface Constants {
     /**
      * 输出文件路径
      */
+    String TEST_FEATURE_PATH = "Resource/test/";
     // 训练线下数据
     String TRAIN_OFF_USER_FEATURE_PATH = "Resource/features/offline/trainUserFeature";
     String TRAIN_OFF_MERCHANT_FEATURE_PATH = "Resource/features/offline/trainMerFeature";

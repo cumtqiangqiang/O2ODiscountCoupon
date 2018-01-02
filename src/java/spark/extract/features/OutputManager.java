@@ -211,7 +211,12 @@ public class OutputManager {
         if (online) {
             userPath = SparkUtil.getOnlineOutputFeaturePath(saveType);
         } else {
-            userPath = SparkUtil.getOfflineOutputFeaturePath(saveType);
+//            userPath = SparkUtil.getOfflineOutputFeaturePath(saveType);
+
+            userPath = SparkUtil.getTestFeatureOutputPath();
+
+
+
         }
 
         dataFrame.write().format("com.databricks.spark.csv").option("header", "true").save(userPath);

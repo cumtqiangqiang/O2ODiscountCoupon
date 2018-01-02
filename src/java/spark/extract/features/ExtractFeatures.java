@@ -36,7 +36,7 @@ public class ExtractFeatures {
         SQLContext sqlContext = new SQLContext(jsc.sc());
         Map<String, String> options = new HashMap<String, String>();
         options.put("header", "true");
-        options.put("path", SparkUtil.getOfflineInputPath());
+        options.put("path", SparkUtil.getTestDataInputPath());
         DataFrame offlineDf = sqlContext.load("com.databricks.spark.csv", options);
 
         offlineDf.registerTempTable("offline_counsume");
@@ -67,41 +67,41 @@ public class ExtractFeatures {
         }).persist(StorageLevel.MEMORY_AND_DISK());
 
 
-        options.put("path", SparkUtil.getOnlineInputPath());
+//        options.put("path", SparkUtil.getOnlineInputPath());
+//
+//        DataFrame onlineDf = sqlContext.load("com.databricks.spark.csv", options);
+//
+//        offlineDf.registerTempTable("offline_counsume");
+//        JavaPairRDD<String, Row> onlineRawDataRDD = onlineDf.toJavaRDD().mapToPair(new PairFunction<Row, String,
+//                Row>() {
+//
+//            private static final long serialVersionUID = -8835903960787653841L;
+//
+//            @Override
+//            public Tuple2<String, Row> call(Row row) throws Exception {
+//                return new Tuple2<String, Row>(row.getString(0), row);
+//            }
+//        }).persist(StorageLevel.MEMORY_AND_DISK());
+//
+//
+//        // 过滤掉没有优惠券的
+//        JavaPairRDD<String, Row> onlinefilterCouponRDD = onlineRawDataRDD.filter(new Function<Tuple2<String, Row>,
+//                Boolean>() {
+//            private static final long serialVersionUID = -6164994096654132755L;
+//
+//            @Override
+//            public Boolean call(Tuple2<String, Row> v1) throws Exception {
+//                Row row = v1._2();
+//                String couponId = row.getString(2);
+//
+//                return StringUtils.notEmpty(couponId);
+//            }
+//        }).persist(StorageLevel.MEMORY_AND_DISK());
 
-        DataFrame onlineDf = sqlContext.load("com.databricks.spark.csv", options);
 
-        offlineDf.registerTempTable("offline_counsume");
-        JavaPairRDD<String, Row> onlineRawDataRDD = onlineDf.toJavaRDD().mapToPair(new PairFunction<Row, String,
-                Row>() {
+        getUserConsumeFeatures(offlineRawDataRDD, offlinefilterCouponRDD, jsc, false, sqlContext);
 
-            private static final long serialVersionUID = -8835903960787653841L;
-
-            @Override
-            public Tuple2<String, Row> call(Row row) throws Exception {
-                return new Tuple2<String, Row>(row.getString(0), row);
-            }
-        }).persist(StorageLevel.MEMORY_AND_DISK());
-
-
-        // 过滤掉没有优惠券的
-        JavaPairRDD<String, Row> onlinefilterCouponRDD = onlineRawDataRDD.filter(new Function<Tuple2<String, Row>,
-                Boolean>() {
-            private static final long serialVersionUID = -6164994096654132755L;
-
-            @Override
-            public Boolean call(Tuple2<String, Row> v1) throws Exception {
-                Row row = v1._2();
-                String couponId = row.getString(2);
-
-                return StringUtils.notEmpty(couponId);
-            }
-        }).persist(StorageLevel.MEMORY_AND_DISK());
-
-
-//        getUserConsumeFeatures(offlineRawDataRDD, offlinefilterCouponRDD, jsc, false, sqlContext);
-
-        getUserConsumeFeatures(onlineRawDataRDD, onlinefilterCouponRDD, jsc, true, sqlContext);
+//        getUserConsumeFeatures(onlineRawDataRDD, onlinefilterCouponRDD, jsc, true, sqlContext);
 
 //        getMerchantConsume(offlineRawDataRDD, offlinefilterCouponRDD, jsc, false, sqlContext);
 //

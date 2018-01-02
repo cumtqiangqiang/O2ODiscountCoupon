@@ -40,6 +40,26 @@ public class SparkUtil {
 
     }
 
+    public static String getTestDataInputPath() {
+
+
+
+        return Constants.TEST_OFFLINE_DATA_PATH;
+
+
+    }
+    public static String getTestFeatureOutputPath() {
+
+
+
+        return Constants.TEST_FEATURE_PATH;
+
+
+    }
+
+
+
+
 
     public static String getOfflineOutputFeaturePath(int saveType){
        String path = "";
