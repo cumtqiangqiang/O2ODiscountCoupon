@@ -29,9 +29,10 @@ public class ExtractFeatures {
 
         SparkConf conf = new SparkConf()
                 .setAppName("O2OCoupon")
+//                .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
                 .setMaster("local");
 
-        Logger.getLogger("org").setLevel(Level.ERROR);
+//        Logger.getLogger("org").setLevel(Level.ERROR);
         JavaSparkContext jsc = new JavaSparkContext(conf);
         SQLContext sqlContext = new SQLContext(jsc.sc());
         Map<String, String> options = new HashMap<String, String>();
@@ -134,7 +135,6 @@ public class ExtractFeatures {
                 String userId = row.getString(0);
                 String merchantId = row.getString(1);
 
-
                 return new Tuple2<String, String>(userId, userId + "-" + merchantId);
             }
         }).distinct().mapToPair(new PairFunction<Tuple2<String, String>, String, Long>() {
@@ -154,6 +154,52 @@ public class ExtractFeatures {
                 return v1 + v2;
             }
         });
+
+
+
+        /**
+         * userid-uniqueMerchant > cnt
+         */
+//        JavaPairRDD<String, Long> userId2UniqueMerchantCnt = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>,
+//                String, String>() {
+//
+//
+//            private static final long serialVersionUID = 7095759952436551348L;
+//
+//            @Override
+//            public Tuple2<String, String> call(Tuple2<String, Row> tuple) throws Exception {
+//                Row row = tuple._2();
+//
+//                String userId = row.getString(0);
+//                String merchantId = row.getString(1);
+//
+//                return new Tuple2<String, String>(userId, merchantId);
+//            }
+//        }).groupByKey().mapToPair(new PairFunction<Tuple2<String, Iterable<String>>, String, Long>() {
+//            @Override
+//            public Tuple2<String, Long> call(Tuple2<String, Iterable<String>> tuple) throws Exception {
+//
+//
+//                Iterator<String> it = tuple._2().iterator();
+//
+//
+//                Set<String> merchantSet = new HashSet<String>();
+//                while (it.hasNext()){
+//
+//                    String mer = it.next();
+//                    merchantSet.add(mer);
+//
+//
+//                }
+//                Long merCnt = Long.valueOf(merchantSet.size());
+//
+//
+//                return new Tuple2<String, Long>(tuple._1(),merCnt);
+//            }
+//        });
+//
+
+
 
 
         /**
@@ -188,6 +234,48 @@ public class ExtractFeatures {
                 return v1 + v2;
             }
         });
+
+
+//        JavaPairRDD<String, Long> userid2UniqueCouponIdRDD = filterCouponRDD.mapToPair(new PairFunction<Tuple2<String, Row>,
+//                String, String>() {
+//
+//
+//            private static final long serialVersionUID = 4534205119235271065L;
+//
+//            @Override
+//            public Tuple2<String, String> call(Tuple2<String, Row> tuple) throws Exception {
+//                Row row = tuple._2();
+//                String userId = row.getString(0);
+//                String couponId = row.getString(2);
+//
+//                return new Tuple2<String, String>(userId,couponId);
+//            }
+//        }).groupByKey().mapToPair(new PairFunction<Tuple2<String, Iterable<String>>, String, Long>() {
+//            @Override
+//            public Tuple2<String, Long> call(Tuple2<String, Iterable<String>> tuple) throws Exception {
+//                Iterator<String> it = tuple._2().iterator();
+//
+//
+//                Set<String> dicountSet = new HashSet<String>();
+//                while (it.hasNext()){
+//
+//                    String mer = it.next();
+//                    dicountSet.add(mer);
+//
+//
+//                }
+//                Long dicountCnt = Long.valueOf(dicountSet.size());
+//
+//
+//                return new Tuple2<String, Long>(tuple._1(),dicountCnt);
+//            }
+//
+//
+//
+//        });
+//
+
+
 
 
         JavaPairRDD<String, Tuple2<Long, Optional<Long>>> userIdUniqueMerCoupRDD = userId2UniqueMerchantCnt
@@ -226,7 +314,7 @@ public class ExtractFeatures {
          * userid -> 各种cnt RDD.
          */
         JavaPairRDD<String, String> userId2CntValue = rawDataRDD.mapToPair(new PairFunction<Tuple2<String, Row>,
-                String, String>() {
+                                                                                   String, String>() {
 
 
             private static final long serialVersionUID = -2392405283969984175L;
@@ -277,17 +365,17 @@ public class ExtractFeatures {
         });
 
 
-        OutputManager.saveFeatures(sqlContext, userId2AggrateRateRDD, online,
-                Constants.SAVE_USER_FEATURE_TYPE);
+//        OutputManager.saveFeatures(sqlContext, userId2AggrateRateRDD, online,
+//                Constants.SAVE_USER_FEATURE_TYPE);
 
 
-//        userId2AggrateRateRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
-//            @Override
-//            public void call(Tuple2<String, String> tuple2) throws Exception {
-//                System.out.println("userId :" + tuple2._1() + "value :" + tuple2._2());
-//            }
-//        });
-//        System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+        userId2AggrateRateRDD.foreach(new VoidFunction<Tuple2<String, String>>() {
+            @Override
+            public void call(Tuple2<String, String> tuple2) throws Exception {
+                System.out.println("userId :" + tuple2._1() + "value :" + tuple2._2());
+            }
+        });
+        System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 
         Map<String, String> userIdCntMap = userId2AggrateCntRDD.collectAsMap();
 
